@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import "./workspace-modules.css";
 
 type TrainingEntry = { id: string; date: string; exercise: string; sets: number; reps: number; load: number };
 type FoodEntry = { id: string; date: string; food: string; calories: number; protein: number; carbs: number; fat: number };
@@ -24,7 +25,7 @@ function useLocalData<T>(key: string, initial: T) {
 const today = () => { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
 const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-function PageHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+function PageHeading({ eyebrow, title, description }: { eyebrow: string; title: ReactNode; description: string }) {
   return <div className="module-heading"><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{description}</p></div>;
 }
 
