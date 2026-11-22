@@ -84,3 +84,12 @@ Search results must not imply that every result is equally reliable. Rank exact 
 ## Implementation status
 
 The first source-aware normalization layer now exists in `src/modules/foodDataModel.ts`, with its contract documented in [Food Data Model](FOOD-DATA-MODEL.md). It preserves source-qualified FDC IDs, source data type, publication date, retrieval timestamp, nutrient IDs and unknown values. It distinguishes analytical, reference-derived and label-derived records, and refuses to scale records unless their nutrient basis is explicitly per 100 g. This is importer infrastructure only: no new USDA catalogue batch has been imported, and the existing starter foods remain provisional.
+
+
+## Barcode lookup implementation
+
+The Nutrition Hub now has a camera barcode scanner (ZXing) and manual EAN/UPC entry. A scanned code is looked up read-only through the Open Food Facts product-by-barcode endpoint. The UI displays the product name, brand, package size, serving-size label, allergens when supplied, image, source record link, and per-100 g nutrition values when available.
+
+Open Food Facts is community-contributed. Treat its values as label/community-derived rather than laboratory-verified. Missing core energy/macronutrient fields block one-tap diary insertion; users are directed to enter values from the package label instead of silently substituting zero. Missing fibre remains explicitly shown as unavailable in the lookup preview. The Open Food Facts database is ODbL-licensed; retain attribution and review share-alike obligations before distributing a combined database. Product images and other media may have separate terms.
+
+The browser camera requires permission and a secure context (HTTPS or localhost). Manual barcode entry remains available when camera access is unsupported or denied. Product lookup is an online feature; the local diary itself remains browser-local.
