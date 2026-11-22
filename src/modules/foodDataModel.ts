@@ -2,8 +2,8 @@
  * Source-aware FoodData Central normalization.
  *
  * This module intentionally preserves unknown nutrients as null and retains
- * record-level provenance. It does not guess a food match or convert branded
- * serving values into per-100 g values without an explicit serving size.
+ * record-level provenance. FDC nutrient amounts are normalized on the documented
+ * per-100 g basis; label-derived records retain their source-quality classification.
  */
 
 export type FoodSourceQuality =
@@ -89,8 +89,8 @@ function findNutrient(items: FdcNutrient[], id: number): number | null {
 
 /**
  * Normalize a USDA FDC food-detail payload.
- * Foundation/FNDDS/SR nutrient amounts are retained on their documented
- * 100 g basis. Branded Foods are kept on their label serving basis.
+ * FDC API nutrient amounts are reported per 100 g (or 100 ml). Branded Foods
+ * are label-derived, but their normalized nutrient values are still per 100 g.
  */
 export function normalizeFdcFood(
   payload: FdcFoodPayload,
@@ -111,7 +111,7 @@ export function normalizeFdcFood(
   return {
     id: `usda:fdc:${payload.fdcId}`,
     name: payload.description.trim(),
-    basis: isBranded ? "per-serving" : payload.dataType ? "per-100g" : "unknown",
+    basis: payload.dataType ? "per-100g" : "unknown",
     nutrients: {
       energyKcal: kcal ?? (kj === null ? null : Number((kj / 4.184).toFixed(2))),
       proteinG: findNutrient(nutrients, FDC_NUTRIENT_IDS.proteinG),
