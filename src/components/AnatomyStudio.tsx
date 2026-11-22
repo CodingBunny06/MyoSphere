@@ -1,118 +1,174 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 type MuscleGroup = "All" | "Chest" | "Shoulders" | "Arms" | "Core" | "Legs";
+type ModelState = "loading" | "ready" | "missing" | "error";
 const muscleGroups: MuscleGroup[] = ["All", "Chest", "Shoulders", "Arms", "Core", "Legs"];
+
+const regionToGroup: Record<string, MuscleGroup> = {
+  Chest: "Chest",
+  Shoulder: "Shoulders",
+  Upper_Arm: "Arms",
+  Forearm: "Arms",
+  Hand: "Arms",
+  Abdomen: "Core",
+  Back_Upper: "Core",
+  Back_Spine: "Core",
+  Pelvis_Hip: "Core",
+  Thigh: "Legs",
+  Lower_Leg: "Legs",
+  Foot: "Legs",
+};
+
+function regionFor(mesh: THREE.Object3D): string {
+  let parent = mesh.parent;
+  while (parent) {
+    if (["Head", "Neck", "Heart", "Chest", "Shoulder", "Upper_Arm", "Forearm", "Hand", "Back_Upper", "Back_Spine", "Abdomen", "Pelvis_Hip", "Thigh", "Lower_Leg", "Foot"].includes(parent.name)) {
+      return parent.name;
+    }
+    parent = parent.parent;
+  }
+  return "Other";
+}
 
 function AnatomyStudio() {
   const mountRef = useRef<HTMLDivElement>(null);
-  const meshesRef = useRef<THREE.Mesh[]>([]);
+  const modelRef = useRef<THREE.Group | null>(null);
+  const muscleMeshesRef = useRef<THREE.Mesh[]>([]);
   const [selected, setSelected] = useState<MuscleGroup>("All");
-  const [webglError, setWebglError] = useState(false);
+  const [modelState, setModelState] = useState<ModelState>("loading");
+  const [selectedMuscle, setSelectedMuscle] = useState<string>("Select a muscle on the model");
+  const [loadProgress, setLoadProgress] = useState(0);
+
+  const muscleCount = useMemo(() => muscleMeshesRef.current.length, [modelState]);
 
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
     } catch {
-      setWebglError(true);
+      setModelState("error");
       return;
     }
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-    camera.position.set(0, 0.65, 7.2);
-    camera.lookAt(0, 0.55, 0);
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.01, 100);
+    camera.position.set(0, 1.1, 3.6);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
     renderer.domElement.style.display = "block";
+    renderer.domElement.style.touchAction = "none";
     mount.replaceChildren(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0x9acbdf, 1.8));
-    const keyLight = new THREE.DirectionalLight(0x8ff7ff, 3.2);
-    keyLight.position.set(3, 5, 6);
+    scene.add(new THREE.HemisphereLight(0xffe6df, 0x30232b, 2.1));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
+    keyLight.position.set(3, 5, 5);
     scene.add(keyLight);
-    const rimLight = new THREE.PointLight(0xff4fd8, 24, 12);
-    rimLight.position.set(-3, 1.5, -2);
+    const fillLight = new THREE.DirectionalLight(0xffb0a0, 1.7);
+    fillLight.position.set(-4, 1, 2);
+    scene.add(fillLight);
+    const rimLight = new THREE.DirectionalLight(0x91d8ff, 2.2);
+    rimLight.position.set(0, 3, -4);
     scene.add(rimLight);
 
-    const body = new THREE.Group();
-    body.scale.setScalar(0.88);
-    body.position.y = -0.12;
-    scene.add(body);
-    const meshes: THREE.Mesh[] = [];
-
-    const addEllipsoid = (name: string, muscleGroup: string, position: [number, number, number], scale: [number, number, number]) => {
-      const material = new THREE.MeshStandardMaterial({ color: "#28516a", roughness: 0.42, metalness: 0.28, emissive: "#071c2a", emissiveIntensity: 0.22 });
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 18), material);
-      mesh.name = name;
-      mesh.userData.muscleGroup = muscleGroup;
-      mesh.position.set(...position);
-      mesh.scale.set(...scale);
-      body.add(mesh);
-      meshes.push(mesh);
-    };
-
-    const addLimb = (name: string, muscleGroup: string, start: THREE.Vector3, end: THREE.Vector3, radius: number) => {
-      const direction = new THREE.Vector3().subVectors(end, start);
-      const material = new THREE.MeshStandardMaterial({ color: "#28516a", roughness: 0.46, metalness: 0.24, emissive: "#071c2a", emissiveIntensity: 0.2 });
-      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.86, radius, direction.length(), 20), material);
-      mesh.name = name;
-      mesh.userData.muscleGroup = muscleGroup;
-      mesh.position.copy(start).add(end).multiplyScalar(0.5);
-      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
-      body.add(mesh);
-      meshes.push(mesh);
-    };
-
-    const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
-    addEllipsoid("Head", "Structure", [0, 2.72, 0], [0.22, 0.27, 0.2]);
-    addLimb("Neck", "Structure", v(0, 2.28, 0), v(0, 2.48, 0), 0.13);
-    addEllipsoid("Torso", "Structure", [0, 1.68, 0], [0.55, 0.78, 0.32]);
-    addEllipsoid("Pelvis", "Structure", [0, 0.72, 0], [0.43, 0.31, 0.29]);
-
-    addEllipsoid("Left pectoral", "Chest", [-0.27, 2.0, 0.25], [0.3, 0.22, 0.15]);
-    addEllipsoid("Right pectoral", "Chest", [0.27, 2.0, 0.25], [0.3, 0.22, 0.15]);
-    for (const x of [-0.15, 0.15]) for (const y of [1.57, 1.31, 1.05]) {
-      addEllipsoid("Abdominal muscle", "Core", [x, y, 0.29], [0.13, 0.105, 0.075]);
-    }
-
-    for (const side of [-1, 1]) {
-      addEllipsoid("Deltoid", "Shoulders", [side * 0.65, 2.05, 0], [0.27, 0.28, 0.27]);
-      addLimb("Upper arm", "Arms", v(side * 0.72, 1.92, 0), v(side * 0.86, 1.2, 0), 0.145);
-      addEllipsoid("Biceps", "Arms", [side * 0.83, 1.53, 0.12], [0.16, 0.31, 0.15]);
-      addLimb("Forearm", "Arms", v(side * 0.86, 1.18, 0), v(side * 0.93, 0.52, 0.02), 0.105);
-      addEllipsoid("Hand", "Arms", [side * 0.94, 0.39, 0.04], [0.11, 0.16, 0.09]);
-    }
-
-    for (const side of [-1, 1]) {
-      addLimb("Thigh", "Legs", v(side * 0.25, 0.63, 0), v(side * 0.34, -0.48, 0), 0.22);
-      addEllipsoid("Quadriceps", "Legs", [side * 0.3, 0.08, 0.14], [0.18, 0.43, 0.14]);
-      addLimb("Lower leg", "Legs", v(side * 0.34, -0.48, 0), v(side * 0.36, -1.47, 0), 0.13);
-      addEllipsoid("Calf", "Legs", [side * 0.35, -0.98, -0.04], [0.15, 0.34, 0.14]);
-      addEllipsoid("Foot", "Legs", [side * 0.36, -1.57, 0.12], [0.15, 0.1, 0.27]);
-    }
-
-    const floorGrid = new THREE.GridHelper(7, 28, 0x286078, 0x173248);
-    floorGrid.position.y = -1.63;
-    body.add(floorGrid);
-    meshesRef.current = meshes;
+    const modelRoot = new THREE.Group();
+    scene.add(modelRoot);
+    modelRef.current = modelRoot;
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 0.55, 0);
+    controls.target.set(0, 0.85, 0);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.055;
+    controls.dampingFactor = 0.06;
     controls.enablePan = false;
-    controls.minDistance = 5.2;
-    controls.maxDistance = 9;
+    controls.minDistance = 1.8;
+    controls.maxDistance = 7;
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.65;
+    controls.autoRotateSpeed = 0.42;
+
+    const loader = new GLTFLoader();
+    let disposed = false;
+    loader.load(
+      "/models/myosphere_muscles_bp3d.glb",
+      (gltf) => {
+        if (disposed) {
+          gltf.scene.traverse((object) => {
+            if (object instanceof THREE.Mesh) {
+              object.geometry.dispose();
+              const materials = Array.isArray(object.material) ? object.material : [object.material];
+              materials.forEach((material) => material.dispose());
+            }
+          });
+          return;
+        }
+
+        modelRoot.add(gltf.scene);
+        const bounds = new THREE.Box3().setFromObject(gltf.scene);
+        const size = bounds.getSize(new THREE.Vector3());
+        const center = bounds.getCenter(new THREE.Vector3());
+        const maxDimension = Math.max(size.x, size.y, size.z);
+        const scale = 2.65 / maxDimension;
+        gltf.scene.scale.setScalar(scale);
+        gltf.scene.position.set(-center.x * scale, -center.y * scale + 0.8, -center.z * scale);
+
+        const meshes: THREE.Mesh[] = [];
+        gltf.scene.traverse((object) => {
+          if (!(object instanceof THREE.Mesh)) return;
+          object.castShadow = false;
+          object.receiveShadow = false;
+          object.userData.region = regionFor(object);
+          object.userData.muscleGroup = regionToGroup[object.userData.region] ?? "All";
+          object.userData.originalMaterials = (Array.isArray(object.material) ? object.material : [object.material]).map((material) => material.clone());
+          object.material = Array.isArray(object.material)
+            ? object.material.map((material) => material.clone())
+            : object.material.clone();
+          meshes.push(object);
+        });
+        muscleMeshesRef.current = meshes;
+        setModelState("ready");
+        controls.target.set(0, 0.8, 0);
+        const fitDistance = Math.max(size.y * scale * 1.45, 2.9);
+        camera.position.set(0, 0.8, fitDistance);
+        camera.near = Math.max(0.005, fitDistance / 1000);
+        camera.far = fitDistance * 20;
+        camera.updateProjectionMatrix();
+        controls.update();
+      },
+      (event) => {
+        if (event.total > 0) setLoadProgress(Math.round((event.loaded / event.total) * 100));
+      },
+      (error) => {
+        console.error("MyoSphere anatomy model failed to load.", error);
+        if (!disposed) setModelState("missing");
+      },
+    );
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const onPointerDown = (event: PointerEvent) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(muscleMeshesRef.current, false);
+      if (hits.length) {
+        const hit = hits[0].object;
+        setSelectedMuscle(String(hit.userData.englishName ?? hit.name.replace(/_[LR]$/, "").replaceAll("_", " ")));
+        const group = hit.userData.muscleGroup as MuscleGroup;
+        if (group && group !== "All") setSelected(group);
+        controls.autoRotate = false;
+      }
+    };
+    renderer.domElement.addEventListener("pointerdown", onPointerDown);
 
     const resize = () => {
       const width = mount.clientWidth;
@@ -122,8 +178,10 @@ function AnatomyStudio() {
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
     };
+    const observer = new ResizeObserver(resize);
+    observer.observe(mount);
     resize();
-    window.addEventListener("resize", resize);
+
     let animationId = 0;
     const animate = () => {
       animationId = window.requestAnimationFrame(animate);
@@ -133,47 +191,62 @@ function AnatomyStudio() {
     animate();
 
     return () => {
+      disposed = true;
       window.cancelAnimationFrame(animationId);
-      window.removeEventListener("resize", resize);
+      observer.disconnect();
       controls.dispose();
-      meshes.forEach((mesh) => {
-        mesh.geometry.dispose();
-        (mesh.material as THREE.Material).dispose();
+      renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      modelRoot.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          materials.forEach((material) => material.dispose());
+        }
       });
-      floorGrid.geometry.dispose();
-      (floorGrid.material as THREE.Material).dispose();
       renderer.dispose();
       mount.replaceChildren();
-      meshesRef.current = [];
+      muscleMeshesRef.current = [];
+      modelRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    meshesRef.current.forEach((mesh) => {
-      const material = mesh.material as THREE.MeshStandardMaterial;
-      const highlighted = selected === "All" || mesh.userData.muscleGroup === selected;
-      material.color.set(highlighted ? "#28627b" : "#142c40");
-      material.emissive.set(highlighted ? "#087c94" : "#07111f");
-      material.emissiveIntensity = highlighted ? 0.48 : 0.12;
+    muscleMeshesRef.current.forEach((mesh) => {
+      const active = selected === "All" || mesh.userData.muscleGroup === selected;
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      materials.forEach((material) => {
+        const standard = material as THREE.MeshStandardMaterial;
+        if ("emissive" in standard) {
+          standard.emissive.set(active ? "#2b0808" : "#090d13");
+          standard.emissiveIntensity = active ? 0.12 : 0.015;
+        }
+        standard.transparent = !active;
+        standard.opacity = active ? 1 : 0.2;
+      });
     });
-  }, [selected]);
+  }, [selected, modelState]);
 
   return (
     <section className="studio-page">
       <div className="studio-heading">
-        <div><span className="eyebrow">MYOSPHERE / ANATOMY LAB</span><h1>Explore the <em>human form.</em></h1><p>Rotate the model and isolate muscle groups to explore the anatomy concept.</p></div>
-        <span className="studio-status"><i /> INTERACTIVE PROTOTYPE</span>
+        <div><span className="eyebrow">MYOSPHERE / ANATOMY LAB</span><h1>Explore the <em>human form.</em></h1><p>Rotate the anatomical model, select individual muscles and isolate major muscle regions.</p></div>
+        <span className="studio-status"><i /> {modelState === "ready" ? "ANATOMY MODEL LOADED" : modelState === "loading" ? "LOADING ANATOMY" : "MODEL ASSET NEEDED"}</span>
       </div>
       <div className="studio-layout">
         <div className="studio-model-card">
-          <div className="studio-model-top"><span>3D MUSCLE MAP</span><span>DRAG TO ROTATE · PINCH TO ZOOM</span></div>
-          {webglError ? <div className="studio-fallback">3D rendering isn't available in this browser. Try opening MyoSphere in the latest version of Safari or Chrome.</div> : <div className="studio-canvas" ref={mountRef} aria-label="Interactive 3D anatomical mannequin" />}
-          <div className="studio-model-foot"><span>BODY PRESET · CONCEPT 01</span><span>LIVE ROTATION <b>●</b></span></div>
+          <div className="studio-model-top"><span>BODY PARTS 3D · MUSCLE LAYERS</span><span>DRAG TO ROTATE · SCROLL / PINCH TO ZOOM</span></div>
+          <div className="studio-canvas" ref={mountRef} aria-label="Interactive 3D anatomical muscle model" />
+          {modelState !== "ready" && <div className="studio-load-overlay">
+            <strong>{modelState === "loading" ? "Preparing the anatomy model…" : modelState === "missing" ? "Anatomy asset not installed yet" : "3D rendering unavailable"}</strong>
+            <p>{modelState === "loading" ? (loadProgress ? `Loading model · ${loadProgress}%` : "The detailed model is approximately 21 MB.") : modelState === "missing" ? "Place myosphere_muscles_bp3d.glb in public/models/ to activate the full anatomy studio." : "Try a recent version of Safari or Chrome with WebGL enabled."}</p>
+          </div>}
+          <div className="studio-model-foot"><span>{modelState === "ready" ? `${muscleCount} SEPARATE MUSCLE MESHES` : "BODY PARTS 3D · CC BY 4.0"}</span><span>ROTATABLE MODEL <b>●</b></span></div>
         </div>
         <aside className="studio-controls">
-          <span className="eyebrow">MUSCLE GROUPS</span><h2>Focus view</h2><p>Select a region to highlight it on the model.</p>
+          <span className="eyebrow">MUSCLE GROUPS</span><h2>Focus view</h2><p>Select a region to highlight it on the model. Tap a visible muscle for its label.</p>
           <div className="muscle-selector">{muscleGroups.map((group) => <button key={group} className={selected === group ? "muscle-chip selected" : "muscle-chip"} onClick={() => setSelected(group)} aria-pressed={selected === group}><span />{group}</button>)}</div>
-          <div className="studio-note"><span>✳</span><div><strong>In development</strong><p>This is a lightweight procedural prototype. Detailed anatomical meshes, individual muscle labels and exercise animations are planned next.</p></div></div>
+          <div className="studio-note"><span>✳</span><div><strong>{selectedMuscle}</strong><p>{modelState === "ready" ? "Tap another muscle on the model to inspect its anatomical label. The region filter dims unrelated structures." : "Individual muscle selection and region highlighting become available when the GLB asset is installed."}</p></div></div>
+          <p className="studio-asset-credit">Anatomy: BodyParts3D © DBCLS · CC BY 4.0</p>
         </aside>
       </div>
     </section>
