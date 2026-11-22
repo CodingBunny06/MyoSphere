@@ -78,7 +78,7 @@ export default function AnatomyStudio() {
         obj.userData.structureKey = keyName;
         let systemNode: THREE.Object3D | null = obj.parent;
         while (systemNode && !systems.includes(systemNode.name as System)) systemNode = systemNode.parent;
-        obj.userData.system = systemNode?.name as System | undefined;
+        obj.userData.system = (systemNode && systems.includes(systemNode.name as System) ? systemNode.name : (info && systems.includes(info.system as System) ? info.system : undefined)) as System | undefined;
         if (obj.userData.system === "skin") {
           obj.geometry = obj.geometry.clone();
           obj.geometry.computeVertexNormals();
