@@ -15,6 +15,8 @@ Conceptual model for discussion; not a final schema.
 - MealEntry: food or recipe, quantity, meal time, and nutrient snapshot.
 - HydrationEntry: amount and timestamp.
 - PersonalRecord: exercise, metric, value, date, and calculation method.
+- ProgressCheckIn: date, optional notes, weight, measurement references, and user-selected tags.
+- ProgressPhoto: private file reference, date, pose/orientation, optional check-in reference, and metadata policy.
 
 ## Principles
 
@@ -25,6 +27,10 @@ Conceptual model for discussion; not a final schema.
 - Use synthetic sample records in the repository.
 - Plan data export and deletion from the beginning.
 - Do not assume body measurements reveal underlying anatomical structure.
+
+## Progress photo storage
+
+Photo binaries must be stored outside the repository in the local application data directory. Store only opaque file references and metadata in SQLite. Do not store image bytes in the database by default. Enforce file-type and size validation, use generated filenames rather than user-provided paths, and prevent path traversal. Photos remain private and local; no remote upload or public sharing in the initial release.
 
 ## Persistence
 
