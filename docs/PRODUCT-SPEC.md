@@ -27,7 +27,7 @@ Design direction:
 Exercise catalogue, workout routines, sets, reps, loads, rest periods, training history, personal records, progression, and muscle-group volume summaries.
 
 ### Nutrition Hub
-Food search, custom foods and recipes, meal logging, serving sizes, calories, macronutrients, selected micronutrients, fibre, and hydration. External food data must retain required attribution and comply with dataset and image licences.
+Food search, custom foods and recipes, meal logging, serving sizes, calories, macronutrients, selected micronutrients, fibre, and hydration. External food data must retain required attribution and comply with dataset and image licences. The catalogue should cover Indian, South Asian, continental and international foods using source-qualified records from licensed/open datasets. Each result must show provenance and data-quality status; community-reported and label-derived entries must not be presented as laboratory-verified. MyFitnessPal content must not be scraped or copied. See [Food Database Expansion Strategy](FOOD-DATABASE-STRATEGY.md).
 
 ### Body Progress and Photo Journal
 A dedicated private progress area:
