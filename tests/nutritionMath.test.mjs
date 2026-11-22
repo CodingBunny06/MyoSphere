@@ -9,6 +9,13 @@ test("scales reference nutrients from 100 g to a weighed portion", () => {
   );
 });
 
+test("preserves unknown fibre when scaling custom foods", () => {
+  assert.deepEqual(
+    scalePer100g({ calories: 100, protein: 5, carbs: 10, fat: 2, fibre: null }, 150),
+    { calories: 150, protein: 7.5, carbs: 15, fat: 3, fibre: null },
+  );
+});
+
 test("rejects invalid portion weights and invalid nutrient values", () => {
   for (const grams of [0, -1, 5001, Number.NaN, Infinity]) {
     assert.throws(() => scalePer100g({ calories: 100, protein: 1, carbs: 1, fat: 1, fibre: 1 }, grams), RangeError);

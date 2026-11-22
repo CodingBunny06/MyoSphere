@@ -5,6 +5,9 @@ export function scalePer100g(values, grams) {
   const factor = grams / 100;
   return Object.fromEntries(
     Object.entries(values).map(([key, value]) => {
+      if (key === "fibre" && value === null) {
+        return [key, null];
+      }
       if (!Number.isFinite(value) || value < 0) {
         throw new RangeError(`Nutrient "${key}" must be a finite non-negative number.`);
       }
