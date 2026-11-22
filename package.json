@@ -5,14 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run prepare:anatomy && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepare:anatomy": "mkdir -p public/models && cp node_modules/open-anatomy-3d/models/anatomy-*.glb public/models/"
   },
   "dependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "three": "^0.180.0"
+    "three": "^0.180.0",
+    "open-anatomy-3d": "^0.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.1.8",
