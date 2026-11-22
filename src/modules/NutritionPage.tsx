@@ -17,8 +17,8 @@ function readMeals():MealEntry[]{
  }catch{return[]}
 }
 function rounded(value:number,digits=1){return Number(value.toFixed(digits))}
-function FoodCard({food,onSelect}:{food:FoodReference;onSelect:(food:FoodReference)=>void}){
- return <article className="food-reference-card"><div><span>{food.category.toUpperCase()} · {food.state.toUpperCase()} · PROVISIONAL REFERENCE</span><strong>{food.name}</strong><small>{food.kcal} kcal · P {food.protein}g · C {food.carbs}g · F {food.fat}g per 100g</small></div><button type="button" onClick={()=>onSelect(food)}>Add ↗</button></article>;
+function FoodCard({food,onSelect,favourite,onToggleFavourite}:{food:FoodReference;onSelect:(food:FoodReference)=>void;favourite:boolean;onToggleFavourite:(id:string)=>void}){
+ return <article className="food-reference-card"><div><span>{food.category.toUpperCase()} · {food.state.toUpperCase()} · PROVISIONAL REFERENCE</span><strong>{food.name}</strong><small>{food.kcal} kcal · P {food.protein}g · C {food.carbs}g · F {food.fat}g per 100g</small></div><button type="button" className="food-favourite" aria-label={favourite?"Remove favourite":"Save favourite"} onClick={()=>onToggleFavourite(food.id)}>{favourite?"★":"☆"}</button><button type="button" onClick={()=>onSelect(food)}>Add ↗</button></article>;
 }
 export function NutritionPage(){
  const [entries,setEntries]=useState<MealEntry[]>(readMeals);
@@ -38,6 +38,8 @@ export function NutritionPage(){
  const [showCustom,setShowCustom]=useState(false);
  const daily=useMemo(()=>entries.filter(e=>e.date===date).reduce((s,e)=>({calories:s.calories+e.calories,protein:s.protein+e.protein,carbs:s.carbs+e.carbs,fat:s.fat+e.fat,fibre:s.fibre+(e.fibre??0),fibreUnknown:s.fibreUnknown+(e.fibre===null?1:0)}),{calories:0,protein:0,carbs:0,fat:0,fibre:0,fibreUnknown:0}),[entries,date]);
  const filtered=foodReferences.filter(f=>(category==="All"||f.category===category)&&f.name.toLowerCase().includes(query.toLowerCase()));
+ const toggleFavourite=(id:string)=>{const next=favourites.includes(id)?favourites.filter(item=>item!==id):[...favourites,id];setFavourites(next);localStorage.setItem("myosphere-food-favourites",JSON.stringify(next));};
+ const copyPreviousDay=()=>{const previous=new Date(`${date}T12:00:00`);previous.setDate(previous.getDate()-1);const previousDate=previous.toISOString().slice(0,10);const source=entries.filter(entry=>entry.date===previousDate);if(!source.length){setNotice("No entries found on the previous day.");return;}const copies=source.map(entry=>({...entry,id:crypto.randomUUID(),date, note:entry.note?`${entry.note} Copied from ${previousDate}.`:`Copied from ${previousDate}.`}));const next=[...copies,...entries];setEntries(next);localStorage.setItem(STORE,JSON.stringify(next));setNotice(`Copied ${copies.length} food entr${copies.length===1?"y":"ies"} from ${previousDate}.`);};
  const save=(entry:MealEntry)=>{const next=[entry,...entries];setEntries(next);localStorage.setItem(STORE,JSON.stringify(next));setNotice("Added to your food diary.");};
  const addReference=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();if(!selected)return;const amount=Number(grams);if(!Number.isFinite(amount)||amount<=0||amount>5000)return;const factor=amount/100;save({id:crypto.randomUUID(),date,meal,food:selected.name,grams:amount,calories:rounded(selected.kcal*factor,0),protein:rounded(selected.protein*factor),carbs:rounded(selected.carbs*factor),fat:rounded(selected.fat*factor),fibre:rounded(selected.fibre*factor),source:selected.source,sourceUrl:selected.sourceUrl,note:selected.note});setSelected(null);setGrams("100");};
  const findBarcode=async(code=barcode)=>{setBarcodeLoading(true);setBarcodeError("");setBarcodeProduct(null);try{const product=await lookupOpenFoodFacts(code);setBarcodeProduct(product);setBarcode(product.barcode);}catch(error){setBarcodeError(error instanceof Error?error.message:"Barcode lookup failed.");}finally{setBarcodeLoading(false);}};
@@ -46,7 +48,7 @@ export function NutritionPage(){
  const remove=(id:string)=>{const next=entries.filter(e=>e.id!==id);setEntries(next);localStorage.setItem(STORE,JSON.stringify(next));};
  return <section className="module-page">
   <div className="module-heading"><span className="eyebrow">MYOSPHERE / NUTRITION HUB</span><h1>Fuel your <em>progress.</em></h1><p>Search reference foods, set the amount you actually ate and track daily macros.</p></div>
-  <div className="module-date-control"><label htmlFor="nutrition-date">DAY</label><input id="nutrition-date" type="date" value={date} onChange={e=>setDate(e.target.value)}/></div>
+  <div className="module-date-control"><label htmlFor="nutrition-date">DAY</label><input id="nutrition-date" type="date" value={date} onChange={e=>setDate(e.target.value)}/><button type="button" onClick={copyPreviousDay}>Copy previous day</button></div>
   <div className="nutrition-summary">
    <article className="nutrition-calories"><span>DAILY ENERGY</span><strong>{Math.round(daily.calories).toLocaleString()} <small>kcal</small></strong><p>Logged for {date}</p></article>
    <article><span>PROTEIN</span><strong>{rounded(daily.protein)} <small>g</small></strong><div className="macro-track"><i style={{width:`${Math.min(daily.protein,200)/2}%`}}/></div></article>
@@ -69,7 +71,7 @@ export function NutritionPage(){
    <div className="module-panel-title"><div><span className="eyebrow">REFERENCE FOOD DATABASE</span><h2>Find a food</h2></div><span className="module-count">{filtered.length} matches</span></div>
    <input className="food-search" aria-label="Search foods" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search rice, oats, egg, chicken, banana…"/>
    <div className="exercise-filters">{["All","Grains","Protein","Dairy","Pulses","Fruit","Vegetables","Nuts & seeds","Oils","Other"].map(c=><button type="button" key={c} className={category===c?"exercise-filter active":"exercise-filter"} onClick={()=>setCategory(c)}>{c}</button>)}</div>
-   <div className="food-reference-list">{filtered.map(f=><FoodCard key={f.id} food={f} onSelect={setSelected}/>)}</div>
+   <div className="food-reference-list">{filtered.map(f=><FoodCard key={f.id} food={f} onSelect={setSelected} favourite={favourites.includes(f.id)} onToggleFavourite={toggleFavourite}/>)}</div>
    {selected&&<form className="food-portion-form" onSubmit={addReference}>
     <div><span className="eyebrow">ADD TO DIARY</span><h3>{selected.name}</h3><p>{selected.kcal} kcal per 100 g · {selected.state.toLowerCase()}</p></div>
     <label>Amount eaten (g)<input type="number" min="1" max="5000" step="1" value={grams} onChange={e=>setGrams(e.target.value)} required/></label>
