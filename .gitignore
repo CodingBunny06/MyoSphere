@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+coverage/
+.playwright/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+private/
+
+# Local databases and personal data
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+data/
+user-data/
+exports/
+backups/
+
+# Local application state
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# Python tooling for optional asset preparation
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
