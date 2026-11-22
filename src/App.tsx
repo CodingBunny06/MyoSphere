@@ -57,6 +57,29 @@ function App() {
                 <div className="hero-index">01 — 05</div>
               </section>
 
+              <section className="anatomy-card" aria-label="3D anatomy preview">
+                <div className="anatomy-copy">
+                  <span className="eyebrow">COMING INTO VIEW · 3D ANATOMY</span>
+                  <h2>Understand your <em>muscles.</em></h2>
+                  <p>Explore the body, discover muscle groups and see how each exercise works.</p>
+                  <button className="anatomy-button" onClick={() => setActive("Studio")}>Explore the 3D studio <span>↗</span></button>
+                </div>
+                <div className="anatomy-visual" aria-hidden="true">
+                  <div className="anatomy-orbit anatomy-orbit-a" />
+                  <div className="anatomy-orbit anatomy-orbit-b" />
+                  <svg className="anatomy-body" viewBox="0 0 150 230" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="75" cy="20" r="14" />
+                    <path d="M62 40 C52 42 43 48 38 61 L25 91 L36 98 L51 72 L48 119 L43 169 L57 171 L68 126 L75 126 L82 126 L93 171 L107 169 L102 119 L99 72 L114 98 L125 91 L112 61 C107 48 98 42 88 40 Z" />
+                    <path className="anatomy-muscle" d="M62 45 L75 53 L88 45 L94 67 L75 77 L56 67 Z" />
+                    <path className="anatomy-muscle" d="M53 74 L69 82 L66 112 L50 108 Z M97 74 L81 82 L84 112 L100 108 Z" />
+                    <path className="anatomy-muscle" d="M68 82 L75 79 L82 82 L80 119 L70 119 Z" />
+                    <path className="anatomy-muscle" d="M51 121 L68 126 L58 165 L45 165 Z M99 121 L82 126 L92 165 L105 165 Z" />
+                    <path className="anatomy-detail" d="M75 53 V119 M56 67 L75 77 L94 67 M50 108 L66 112 M100 108 L84 112" />
+                  </svg>
+                  <span className="anatomy-tag">MUSCLE MAP · PREVIEW</span>
+                </div>
+              </section>
+
               <section className="section-heading"><div><span className="eyebrow">YOUR OVERVIEW</span><h2>The essentials</h2></div><span className="muted-label">A fresh start</span></section>
               <section className="metric-grid">
                 <article className="metric-card"><div className="metric-top"><span>TRAINING</span><span className="metric-icon">↗</span></div><strong>—</strong><p>Workouts this week</p><div className="metric-foot">Log your first session <span>→</span></div></article>
