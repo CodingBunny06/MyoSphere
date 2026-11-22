@@ -4,7 +4,7 @@
 
 MyoSphere brings workout tracking, nutrition, body progress, interactive 3D anatomy, exercise visualization, and optional AI-powered insights into one platform.
 
-> **Development status:** Early Stage 0 — responsive frontend shell is now in place. Not yet suitable for production or real personal fitness records.
+> **Development status:** Early prototype. The responsive dashboard, manual workout/nutrition/progress logging, theme preferences, and procedural 3D anatomy preview are implemented. The app is not production-ready.
 
 ## Current prototype
 
