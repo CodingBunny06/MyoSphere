@@ -8,8 +8,6 @@ updates:
       time: "09:00"
       timezone: "Asia/Kolkata"
     open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
     groups:
       production-dependencies:
         dependency-type: "production"
@@ -24,5 +22,3 @@ updates:
       time: "09:30"
       timezone: "Asia/Kolkata"
     open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
