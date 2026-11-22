@@ -35,3 +35,24 @@ Photo binaries must be stored outside the repository in the local application da
 ## Persistence
 
 SQLite is the initial target. Schema migrations must be versioned. Database files and real user records must never be committed.
+
+## Planned multi-user and social entities
+
+For a later multi-user release, not the initial single-user prototype:
+- Account: authentication identity, security metadata, and account status.
+- PublicProfile: user-selected display name, handle, avatar, bio, and discoverability settings.
+- ProfilePrivacy: account visibility (`public` or `private`) and per-content visibility preferences.
+- FollowRequest: requester, target, status (`pending`, `accepted`, `declined`), and timestamps.
+- FollowRelationship: approved follower/followed pair.
+- BlockRelationship: blocking account, blocked account, and timestamp.
+- SharedContent: reference to an item plus explicit audience; never duplicate private source records.
+
+## Privacy and authorization rules
+
+- New accounts default to private.
+- Public profile visibility never makes every record public; content visibility is independently configured.
+- Private-profile content requires an approved follow relationship; pending requests grant no access.
+- Blocking overrides follow relationships and prevents access and new follow requests.
+- Enforce authorization in the API for every read and write; hiding UI elements is not access control.
+- Nutrition logs, body measurements, progress photos, and detailed workout records are private by default.
+- Avoid leaking private account existence or content through search, API errors, counts, caches, or notifications.
