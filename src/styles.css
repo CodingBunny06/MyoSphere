@@ -266,3 +266,6 @@ body{background:var(--bg);color:var(--white)}
 .studio-asset-credit{margin:16px 0 0;color:var(--muted);font-size:8px;line-height:1.6}
 .studio-canvas canvas{cursor:grab}
 .studio-canvas canvas:active{cursor:grabbing}
+
+.metric-link{width:100%;border-left:0;border-right:0;border-bottom:0;background:transparent;text-align:left;cursor:pointer;font-family:inherit}
+.metric-link:hover{color:var(--lime)}
