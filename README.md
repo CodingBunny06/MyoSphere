@@ -44,7 +44,13 @@ npm run build
 
 MyoSphere is being developed as a responsive web app first, with a PWA-ready manifest. Native iOS packaging with Capacitor is planned after the web experience and local data layer are stable.
 
-## Anatomy model setup\n\nThe Studio loads `public/models/myosphere_muscles_bp3d.glb`. The model is not committed to this repository yet. Extract the supplied model archive and copy the GLB into that exact path. Read [the anatomy attribution and asset limitations](docs/ANATOMY-ATTRIBUTION.md) before redistributing it. The asset is CC BY 4.0; the application code remains AGPL-3.0.\n\n## In development / planned next
+## Anatomy model setup
+
+The Studio uses the Open Anatomy 3D package for separate male and female anatomical models. Run `npm install` before `npm run build`; the build copies the model files from the package into `public/models/` for local serving. The model binaries are generated build assets and are not committed to the source repository.
+
+The upstream model assets and catalogue are licensed under CC BY 4.0, separately from MyoSphere's AGPL-3.0 application code. The viewer displays the required upstream attribution. See [Anatomy Studio v2 notes](docs/ANATOMY-STUDIO-V2.md) and the [upstream model licence](https://github.com/MervinR07/open-anatomy-3d/blob/main/LICENSE-MODELS.md).
+
+## In development / planned next
 
 - **Workout Hub:** exercise media, personal records, progression charts, muscle-volume analysis, and reusable workout templates.
 - **Nutrition Hub:** starter USDA FoodData Central reference search, gram-based portion logging, meal categories, macro/fibre totals, and custom label/recipe entries.
