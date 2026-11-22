@@ -28,17 +28,8 @@
 - [ ] Local progress photo import and management.
 - [ ] Side-by-side photo comparison.
 - [ ] Optional measurement history.
-- [ ] GLB asset pipeline.
-- [ ] Interactive anatomy prototype.
-- [ ] Exercise animation playback.
-- [ ] Muscle-group mapping and educational content.
-- [ ] Performance and accessibility review.
-
-## Stage 4 — Insights
-- [ ] GLB asset pipeline.
-- [ ] Interactive anatomy prototype.
-- [ ] Exercise animation playback.
-- [ ] Muscle-group mapping and educational content.
+- [ ] GLB asset pipeline and interactive anatomy prototype.
+- [ ] Exercise animation playback and muscle-group mapping.
 - [ ] Performance and accessibility review.
 
 ## Stage 4 — Insights
@@ -53,3 +44,14 @@
 - [ ] Remote-access threat model.
 - [ ] Authentication, TLS, and hardened deployment before remote access.
 - [ ] Backup, restore, export, and deletion workflows.
+
+## Stage 6 — Accounts and community privacy
+- [ ] Multi-user account and authentication model.
+- [ ] Public/private profile setting (private by default).
+- [ ] Per-section and per-item visibility controls.
+- [ ] Follow requests and approval workflow.
+- [ ] Follower removal and account blocking.
+- [ ] Privacy preview and visibility-change confirmation.
+- [ ] Server-side authorization and private media delivery.
+- [ ] Tests for private profile, follow, block, and data-leakage cases.
+- [ ] Explicit opt-in sharing for progress photos and achievements.
