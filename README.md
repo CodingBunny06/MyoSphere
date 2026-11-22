@@ -9,7 +9,7 @@ MyoSphere brings workout tracking, nutrition, body progress, interactive 3D anat
 ## Current prototype
 
 - Responsive React + TypeScript + Vite dashboard.
-- Navigation placeholders for Overview, Training, Nutrition, Progress, and Studio.
+- Responsive Overview, Training, Nutrition, Progress, Studio, and Settings sections.
 - Mobile-first layout with a mobile navigation bar.
 - PWA manifest foundation for a future iPhone Home Screen install.
 - Private-by-default product direction.
@@ -44,9 +44,9 @@ npm run build
 
 MyoSphere is being developed as a responsive web app first, with a PWA-ready manifest. Native iOS packaging with Capacitor is planned after the web experience and local data layer are stable.
 
-## Anatomy model setup\n\nThe Studio loads `public/models/myosphere_muscles_bp3d.glb`. The model is not committed to this repository yet. Extract the supplied model archive and copy the GLB into that exact path. Read [the anatomy attribution and asset limitations](docs/ANATOMY-ATTRIBUTION.md) before redistributing it. The asset is CC BY 4.0; the application code remains AGPL-3.0.\n\n## Planned modules
+## Anatomy model setup\n\nThe Studio loads `public/models/myosphere_muscles_bp3d.glb`. The model is not committed to this repository yet. Extract the supplied model archive and copy the GLB into that exact path. Read [the anatomy attribution and asset limitations](docs/ANATOMY-ATTRIBUTION.md) before redistributing it. The asset is CC BY 4.0; the application code remains AGPL-3.0.\n\n## In development / planned next
 
-- **Workout Hub:** routines, sets, reps, loads, training history, personal records, and progression.
+- **Workout Hub:** exercise media, personal records, progression charts, muscle-volume analysis, and reusable workout templates.
 - **Nutrition Hub:** food search, meal logging, calories, macros, and hydration.
 - **Body Progress:** private progress photos, check-ins, measurements, and comparisons.
 - **3D Anatomy:** interactive muscular anatomy with selectable muscle groups.
