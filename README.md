@@ -4,7 +4,7 @@
 
 MyoSphere brings workout tracking, nutrition, body progress, interactive 3D anatomy, exercise visualization, and optional AI-powered insights into one platform.
 
-> **Development status:** Early prototype. The responsive dashboard, manual workout/nutrition/progress logging, theme preferences, and procedural 3D anatomy preview are implemented. The app is not production-ready.
+> **Development status:** Early prototype. The responsive dashboard, manual workout/nutrition/progress logging, theme preferences, and a GLB-based anatomy viewer are implemented. The detailed anatomy model is a separately supplied asset and must be installed locally. The app is not production-ready.
 
 ## Current prototype
 
@@ -44,7 +44,7 @@ npm run build
 
 MyoSphere is being developed as a responsive web app first, with a PWA-ready manifest. Native iOS packaging with Capacitor is planned after the web experience and local data layer are stable.
 
-## Planned modules
+## Anatomy model setup\n\nThe Studio loads `public/models/myosphere_muscles_bp3d.glb`. The model is not committed to this repository yet. Extract the supplied model archive and copy the GLB into that exact path. Read [the anatomy attribution and asset limitations](docs/ANATOMY-ATTRIBUTION.md) before redistributing it. The asset is CC BY 4.0; the application code remains AGPL-3.0.\n\n## Planned modules
 
 - **Workout Hub:** routines, sets, reps, loads, training history, personal records, and progression.
 - **Nutrition Hub:** food search, meal logging, calories, macros, and hydration.
