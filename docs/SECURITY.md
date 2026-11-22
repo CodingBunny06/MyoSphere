@@ -34,3 +34,16 @@ Before remote or multi-user use, require authentication, secure session manageme
 Please do not publish exploitable security details in public issues. Until a private security contact is configured, contact the repository owner through GitHub's private contact mechanisms.
 
 This is a baseline, not a security certification or guarantee. Do not use an early development build as a medical or production-grade record system.
+
+## Future public/private profile requirements
+
+Mandatory before multi-user profiles or social features launch:
+- New accounts default to private.
+- Public profile visibility does not override individual content privacy settings.
+- Private profile content is visible only to approved followers, subject to blocks and content-level restrictions.
+- Pending follow requests grant no access.
+- Users can approve/decline requests, remove followers, block accounts, and change visibility.
+- Enforce authorization server-side on every endpoint and media request; frontend-only restrictions are insufficient.
+- Do not leak private content or relationships through search, counters, notifications, logs, caches, or errors.
+- Provide a privacy preview and explain the consequences of changing visibility.
+- Progress photos, body measurements, nutrition logs, and detailed workout records remain private unless explicitly shared.
