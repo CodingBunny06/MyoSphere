@@ -71,3 +71,15 @@ Prototype with a small GLB model before committing to detailed anatomy assets. V
 
 ### ADR-004: Explicit AI consent
 AI features are opt-in and disclose data sent to external services. Fitness records and body measurements are sensitive personal information.
+
+## Future account and profile privacy architecture
+
+Public/private profiles belong to a later multi-user milestone and do not change the initial local-only deployment.
+- Model account authentication separately from public profile data.
+- Default every new account to private.
+- Enforce follower approval and per-content visibility in API authorization, not only frontend routing.
+- Apply deny-by-default checks to profile, feed, search, media, and notification endpoints.
+- Serve private media only after authorization; never expose permanent public file URLs.
+- Ensure caches, logs, analytics, search indexes, and notifications do not leak private records or relationships.
+- Support blocking, follower removal, privacy changes, and account/data deletion.
+- Complete threat modelling, security testing, secure sessions, rate limiting, abuse reporting, and media-access review before remote multi-user deployment.
