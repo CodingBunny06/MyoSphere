@@ -37,8 +37,11 @@ function numeric(value: unknown): number | null {
   return null;
 }
 
-function nutrient(nutrients: Record<string, unknown>, key: string): number | null {
-  return numeric(nutrients[key]);
+function nutrient(nutrients: Record<string, unknown>, key: string, maximum: number): number | null {
+  const value = numeric(nutrients[key]);
+  // Open Food Facts is community-contributed. Ignore impossible per-100 g
+  // values rather than letting malformed records inflate a food diary.
+  return value !== null && value >= 0 && value <= maximum ? value : null;
 }
 
 /** Read-only barcode lookup. Product data is community-contributed and may be incomplete. */
@@ -56,9 +59,9 @@ export async function lookupOpenFoodFacts(barcodeInput: string): Promise<OpenFoo
   const n = p.nutriments ?? {};
   // Only accept per-100 g energy fields. A generic "_value" may describe a
   // serving and must not be silently treated as a per-100 g amount.
-  let kcal = nutrient(n, "energy-kcal_100g");
+  let kcal = nutrient(n, "energy-kcal_100g", 1000);
   if (kcal === null) {
-    const kj = nutrient(n, "energy-kj_100g") ?? nutrient(n, "energy_100g");
+    const kj = nutrient(n, "energy-kj_100g", 4184) ?? nutrient(n, "energy_100g", 4184);
     kcal = kj === null ? null : Number((kj / 4.184).toFixed(1));
   }
   return {
@@ -69,10 +72,10 @@ export async function lookupOpenFoodFacts(barcodeInput: string): Promise<OpenFoo
     servingSize: p.serving_size || "",
     imageUrl: p.image_front_url || p.image_url || "",
     kcalPer100g: kcal,
-    proteinPer100g: nutrient(n, "proteins_100g"),
-    carbsPer100g: nutrient(n, "carbohydrates_100g"),
-    fatPer100g: nutrient(n, "fat_100g"),
-    fibrePer100g: nutrient(n, "fiber_100g") ?? nutrient(n, "fibre_100g"),
+    proteinPer100g: nutrient(n, "proteins_100g", 100),
+    carbsPer100g: nutrient(n, "carbohydrates_100g", 100),
+    fatPer100g: nutrient(n, "fat_100g", 100),
+    fibrePer100g: nutrient(n, "fiber_100g", 100) ?? nutrient(n, "fibre_100g", 100),
     allergens: p.allergens || "",
     completeness: numeric(p.completeness),
     sourceUrl: `https://world.openfoodfacts.org/product/${barcode}`,
