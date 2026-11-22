@@ -54,7 +54,9 @@ export async function lookupOpenFoodFacts(barcodeInput: string): Promise<OpenFoo
   if (data.status !== 1 || !data.product) throw new Error("Product not found in Open Food Facts. You can add it manually instead.");
   const p = data.product;
   const n = p.nutriments ?? {};
-  let kcal = nutrient(n, "energy-kcal_100g") ?? nutrient(n, "energy-kcal_value");
+  // Only accept per-100 g energy fields. A generic "_value" may describe a
+  // serving and must not be silently treated as a per-100 g amount.
+  let kcal = nutrient(n, "energy-kcal_100g");
   if (kcal === null) {
     const kj = nutrient(n, "energy-kj_100g") ?? nutrient(n, "energy_100g");
     kcal = kj === null ? null : Number((kj / 4.184).toFixed(1));
