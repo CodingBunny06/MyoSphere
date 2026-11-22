@@ -82,7 +82,8 @@ export default function AnatomyStudio() {
         // The upstream GLB contains every anatomical system. Fail closed:
         // unknown/unwanted meshes (skeleton, organs, vessels, nerves, joints)
         // must never remain visible just because they were not classified.
-        obj.visible = obj.userData.system ? visible[obj.userData.system] : false;
+        const classifiedSystem = obj.userData.system as System | undefined;
+        obj.visible = classifiedSystem ? visible[classifiedSystem] : false;
         if (obj.userData.system === "skin") {
           obj.geometry = obj.geometry.clone();
           obj.geometry.computeVertexNormals();
