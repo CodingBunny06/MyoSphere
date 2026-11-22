@@ -28,6 +28,9 @@ jobs:
       - name: Build and type-check
         run: npm run build
 
+      - name: Run regression tests
+        run: npm test
+
       - name: Check required project files
         run: |
           test -s README.md
