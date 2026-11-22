@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 type TrainingEntry = { id: string; date: string; exercise: string; sets: number; reps: number; load: number };
 type FoodEntry = { id: string; date: string; food: string; calories: number; protein: number; carbs: number; fat: number };
@@ -21,7 +21,7 @@ function useLocalData<T>(key: string, initial: T) {
   return [value, setValue] as const;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
 const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 function PageHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
@@ -36,7 +36,7 @@ export function TrainingPage() {
   const [reps, setReps] = useState("10");
   const [load, setLoad] = useState("0");
   const totalVolume = useMemo(() => entries.reduce((sum, item) => sum + item.sets * item.reps * item.load, 0), [entries]);
-  const addEntry = (event: React.FormEvent<HTMLFormElement>) => {
+  const addEntry = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!exercise.trim() || Number(sets) < 1 || Number(reps) < 1 || Number(load) < 0) return;
     setEntries((current) => [{ id: makeId(), date, exercise: exercise.trim(), sets: Number(sets), reps: Number(reps), load: Number(load) }, ...current]);
@@ -79,7 +79,7 @@ export function NutritionPage() {
   const [carbs, setCarbs] = useState("0");
   const [fat, setFat] = useState("0");
   const daily = useMemo(() => entries.filter((item) => item.date === date).reduce((sum, item) => ({ calories: sum.calories + item.calories, protein: sum.protein + item.protein, carbs: sum.carbs + item.carbs, fat: sum.fat + item.fat }), { calories: 0, protein: 0, carbs: 0, fat: 0 }), [entries, date]);
-  const addEntry = (event: React.FormEvent<HTMLFormElement>) => {
+  const addEntry = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!food.trim() || [calories, protein, carbs, fat].some((value) => !Number.isFinite(Number(value)) || Number(value) < 0)) return;
     setEntries((current) => [{ id: makeId(), date, food: food.trim(), calories: Number(calories), protein: Number(protein), carbs: Number(carbs), fat: Number(fat) }, ...current]);
@@ -123,7 +123,7 @@ export function ProgressPage() {
   const [weight, setWeight] = useState("");
   const [note, setNote] = useState("");
   const latest = entries[0];
-  const addEntry = (event: React.FormEvent<HTMLFormElement>) => {
+  const addEntry = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const parsedWeight = Number(weight);
     if (!weight || !Number.isFinite(parsedWeight) || parsedWeight <= 0 || parsedWeight > 500) return;
