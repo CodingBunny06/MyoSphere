@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import "./workspace-modules.css";
-import NutritionPageView from "./NutritionPage";
+import { NutritionPage as NutritionPageView } from "./NutritionPage";
 import ProgressPhotoJournal from "./ProgressPhotoJournal";
 
 type TrainingEntry = { id: string; date: string; exercise: string; sets: number; reps: number; load: number };
