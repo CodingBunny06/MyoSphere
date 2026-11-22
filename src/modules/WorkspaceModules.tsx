@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import "./workspace-modules.css";
+import NutritionPageView from "./NutritionPage";
 import ProgressPhotoJournal from "./ProgressPhotoJournal";
 
 type TrainingEntry = { id: string; date: string; exercise: string; sets: number; reps: number; load: number };
@@ -137,7 +138,7 @@ export function TrainingPage() {
   </section>;
 }
 
-export function NutritionPage() {
+export function LegacyNutritionPage() {
   const [entries, setEntries] = useLocalData<FoodEntry[]>("myosphere-nutrition-v1", []);
   const [date, setDate] = useState(today());
   const [food, setFood] = useState("");
@@ -218,3 +219,5 @@ export function ProgressPage() {
     <p className="module-privacy">Your check-ins stay in this browser. Progress photos and secure private storage will be added separately.</p>
   </section>;
 }
+
+export { NutritionPageView as NutritionPage };
