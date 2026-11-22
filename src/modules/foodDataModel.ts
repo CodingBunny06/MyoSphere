@@ -12,7 +12,8 @@ export type FoodSourceQuality =
   | "community-reported"
   | "recipe-calculated"
   | "user-entered"
-  | "provisional";
+  | "provisional"
+  | "reference-derived";
 
 export type NutrientBasis = "per-100g" | "per-serving" | "unknown";
 
@@ -28,7 +29,7 @@ export type SourceProvenance = {
   provider: "USDA FoodData Central" | "Open Food Facts" | "MyoSphere";
   sourceRecordId: string;
   sourceDataType?: string;
-  sourceRelease?: string;
+  sourcePublicationDate?: string;
   retrievedAt: string;
   sourceUrl: string;
   quality: FoodSourceQuality;
@@ -97,7 +98,13 @@ export function normalizeFdcFood(
 ): NormalizedFoodRecord {
   const nutrients = payload.foodNutrients ?? [];
   const dataType = payload.dataType ?? "Unknown";
-  const isBranded = dataType.toLowerCase().includes("branded");
+  const normalizedType = dataType.toLowerCase();
+  const isBranded = normalizedType.includes("branded");
+  const quality: FoodSourceQuality = isBranded
+    ? "label-derived"
+    : normalizedType.includes("foundation") || normalizedType.includes("sr legacy")
+      ? "analytical"
+      : "reference-derived";
   const kcal = findNutrient(nutrients, FDC_NUTRIENT_IDS.energyKcal);
   const kj = findNutrient(nutrients, FDC_NUTRIENT_IDS.energyKj);
 
@@ -116,10 +123,10 @@ export function normalizeFdcFood(
       provider: "USDA FoodData Central",
       sourceRecordId: String(payload.fdcId),
       sourceDataType: dataType,
-      sourceRelease: payload.publicationDate,
+      sourcePublicationDate: payload.publicationDate,
       retrievedAt,
       sourceUrl: `https://fdc.nal.usda.gov/food-details/${payload.fdcId}/nutrients`,
-      quality: isBranded ? "label-derived" : "analytical",
+      quality,
     },
   };
 }
