@@ -7,8 +7,8 @@ import { ANATOMY_BY_KEY, ATTRIBUTION } from "open-anatomy-3d";
 import "./anatomy-v2.css";
 
 type Sex = "male" | "female";
-type System = "skin" | "skeleton" | "muscles" | "organs" | "vessels" | "nerves";
-const systems: System[] = ["skin", "skeleton", "muscles", "organs", "vessels", "nerves"];
+type System = "skin" | "muscles";
+const systems: System[] = ["skin", "muscles"];
 const palette = ["#ff754f", "#48c7ff", "#b4e65c", "#e98ad2", "#ffbd54", "#8c91ff", "#45d6b0", "#f18b65", "#76a7f7", "#d4e66a"];
 const categoryColor = (category: string) => {
   let hash = 0;
@@ -20,13 +20,12 @@ export default function AnatomyStudio() {
   const mountRef = useRef<HTMLDivElement>(null);
   const objectsRef = useRef<THREE.Object3D[]>([]);
   const [sex, setSex] = useState<Sex>("male");
-  const [visible, setVisible] = useState<Record<System, boolean>>({ skin: false, skeleton: true, muscles: true, organs: false, vessels: false, nerves: false });
+  const [visible, setVisible] = useState<Record<System, boolean>>({ skin: true, muscles: false });
   const [selectedKey, setSelectedKey] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [progress, setProgress] = useState(0);
-  const [fatRegions, setFatRegions] = useState<string[]>([]);
-  const [showFat, setShowFat] = useState(false);
+  const [fatPercent, setFatPercent] = useState(20);
   const [query, setQuery] = useState("");
 
   const selectedInfo = selectedKey ? ANATOMY_BY_KEY[selectedKey as keyof typeof ANATOMY_BY_KEY] : null;
@@ -80,7 +79,16 @@ export default function AnatomyStudio() {
         let systemNode: THREE.Object3D | null = obj.parent;
         while (systemNode && !systems.includes(systemNode.name as System)) systemNode = systemNode.parent;
         obj.userData.system = systemNode?.name as System | undefined;
-        obj.userData.baseMaterial = (Array.isArray(obj.material) ? obj.material[0] : obj.material).clone();
+        if (obj.userData.system === "skin") {
+          obj.geometry = obj.geometry.clone();
+          obj.geometry.computeVertexNormals();
+          const position = obj.geometry.getAttribute("position") as THREE.BufferAttribute;
+          const normal = obj.geometry.getAttribute("normal") as THREE.BufferAttribute;
+          obj.userData.basePositions = Float32Array.from(position.array as ArrayLike<number>);
+          obj.userData.baseNormals = Float32Array.from(normal.array as ArrayLike<number>);
+          const skinMats = Array.isArray(obj.material) ? obj.material : [obj.material];
+          obj.material = skinMats.map((mat) => { const clone = mat.clone() as THREE.MeshStandardMaterial; clone.color.multiply(new THREE.Color("#e6b49b")); clone.roughness = 0.86; clone.metalness = 0; return clone; });
+        }
         if (info?.system === "muscles") {
           const color = categoryColor(info.key);
           const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
@@ -137,24 +145,44 @@ export default function AnatomyStudio() {
     });
   }, [visible, selectedKey, loading]);
 
-  const fatOptions = ["Abdomen", "Waist / flanks", "Chest", "Upper back", "Lower back", "Upper arms", "Hips", "Glutes", "Thighs"];
+  useEffect(() => {
+    objectsRef.current.forEach((obj) => {
+      if (obj.userData.system !== "skin" || !(obj instanceof THREE.Mesh)) return;
+      const geometry = obj.geometry as THREE.BufferGeometry;
+      const position = geometry.getAttribute("position") as THREE.BufferAttribute;
+      const base = obj.userData.basePositions as Float32Array | undefined;
+      const normals = obj.userData.baseNormals as Float32Array | undefined;
+      if (!base || !normals) return;
+      // A restrained, reversible surface inflation for visual exploration only.
+      // It is not a validated mapping between body-fat percentage and anatomy.
+      const displacement = ((fatPercent - 20) / 25) * 0.012;
+      for (let i = 0; i < position.count; i++) {
+        const offset = i * 3;
+        position.setXYZ(i, base[offset] + normals[offset] * displacement, base[offset + 1] + normals[offset + 1] * displacement, base[offset + 2] + normals[offset + 2] * displacement);
+      }
+      position.needsUpdate = true;
+      geometry.computeVertexNormals();
+      geometry.computeBoundingSphere();
+    });
+  }, [fatPercent, loading]);
+
   return <section className="anatomy-v2">
     <div className="studio-heading"><div><span className="eyebrow">MYOSPHERE / ANATOMY LAB · V2</span><h1>Explore the <em>human form.</em></h1><p>Colour-coded anatomy with separately selectable structures. Educational visualisation, not a diagnostic tool.</p></div></div>
     <div className="anatomy-v2-toolbar">
       <div className="anatomy-v2-toggle"><button className={sex === "male" ? "active" : ""} onClick={() => setSex("male")}>Male</button><button className={sex === "female" ? "active" : ""} onClick={() => setSex("female")}>Female</button></div>
-      <button className={showFat ? "anatomy-fat active" : "anatomy-fat"} onClick={() => setShowFat((value) => !value)}>Fat-region overlay {showFat ? "ON" : "OFF"}</button>
+      <span className="anatomy-fat-readout">Illustrative body-fat reference: {fatPercent}%</span>
     </div>
     <div className="anatomy-v2-layout">
       <div className="anatomy-v2-viewer"><div className="anatomy-v2-canvas" ref={mountRef} />
         {loading && <div className="anatomy-v2-loading">Loading {sex} anatomy… {progress}%</div>}
         {loadError && <div className="anatomy-v2-error">{loadError}</div>}
-        {showFat && <div className="anatomy-fat-notice">Illustrative self-reported regions only — not a measurement of body fat.</div>}
+        <div className="anatomy-fat-notice">Appearance preview only. The slider does not measure body fat or reproduce a clinically validated body-composition model.</div>
       </div>
       <aside className="anatomy-v2-panel">
         <div className="anatomy-v2-section"><span className="eyebrow">BODY SYSTEMS</span>{systems.map((system) => <label key={system}><input type="checkbox" checked={visible[system]} onChange={(e) => setVisible((current) => ({ ...current, [system]: e.target.checked }))}/><span className={`anatomy-swatch anatomy-swatch-${system}`}/>{system[0].toUpperCase()+system.slice(1)}</label>)}</div>
         <div className="anatomy-v2-section"><span className="eyebrow">SELECTED STRUCTURE</span><strong>{selectedInfo?.label || "Select a structure"}</strong><small>{selectedInfo ? `${selectedInfo.system} · ${selectedInfo.category}` : "Click a visible structure in the model."}</small></div>
         <div className="anatomy-v2-section"><span className="eyebrow">MUSCLE SEARCH</span><input className="anatomy-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search muscles…"/><div className="anatomy-muscle-results">{filteredMuscles.slice(0, 12).map((item) => <button key={item.key} onClick={() => { setVisible((v) => ({ ...v, muscles: true })); setSelectedKey(item.key); }}>{item.label}</button>)}</div></div>
-        {showFat && <div className="anatomy-v2-section"><span className="eyebrow">AREAS YOU NOTICE</span><p className="anatomy-fat-copy">Choose areas you personally notice. This is a subjective body-map, not a body-fat estimate.</p>{fatOptions.map((region) => <label key={region}><input type="checkbox" checked={fatRegions.includes(region)} onChange={(e) => setFatRegions((current) => e.target.checked ? [...current, region] : current.filter((item) => item !== region))}/>{region}</label>)}</div>}
+        <div className="anatomy-v2-section"><span className="eyebrow">BODY-FAT REFERENCE</span><div className="fat-slider-heading"><strong>{fatPercent}%</strong><span>Adjust to your own reference</span></div><input className="anatomy-fat-slider" type="range" min="5" max="45" step="1" value={fatPercent} onChange={(event) => setFatPercent(Number(event.target.value))}/><div className="fat-slider-scale"><span>5%</span><span>45%</span></div><p className="anatomy-fat-copy">This gently changes the outer-surface preview to help visualise a range. Real fat distribution varies by person, sex, age and genetics; this is not a measurement or prediction.</p></div>
         <small className="anatomy-attribution">{ATTRIBUTION}</small>
       </aside>
     </div>
