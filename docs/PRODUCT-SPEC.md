@@ -18,7 +18,7 @@ Design direction:
 ## Intended users
 
 - Initial: one individual using a private local instance.
-- Later: self-hosters and an open-source contributor community.
+- Later: self-hosters and an opt-in community/social experience.
 - Multi-user hosted service is outside the initial release scope.
 
 ## Core modules
@@ -30,14 +30,23 @@ Exercise catalogue, workout routines, sets, reps, loads, rest periods, training 
 Food search, custom foods and recipes, meal logging, serving sizes, calories, macronutrients, selected micronutrients, fibre, and hydration. External food data must retain required attribution and comply with dataset and image licences.
 
 ### Body Progress and Photo Journal
-A dedicated private progress area inspired by common fitness check-in workflows:
+A dedicated private progress area:
 - Add dated progress photos (front, side, back, or custom pose).
 - Group photos into a chronological progress timeline.
 - Compare two selected dates with a side-by-side view and optional opacity overlay.
 - Attach optional body measurements, weight, notes, and check-in tags.
 - Let users edit, export, and permanently delete individual photos and check-ins.
 - Photos are private by default. No public profile, community feed, sharing, or cloud upload in the initial release.
-- Clearly explain local storage, backup behaviour, and any future sync or sharing controls before enabling them.
+
+### Profiles and privacy (planned multi-user feature)
+When multi-user accounts are introduced, each account can choose Public or Private profile visibility, inspired by familiar social apps but tailored to sensitive fitness data.
+- New accounts default to Private.
+- Public profiles are discoverable and show only information the user explicitly marks as visible.
+- Private profiles require an approved follow relationship before follower-only content can be viewed. Follow requests can be accepted or declined.
+- Users can switch visibility, approve/remove followers, block accounts, and control discoverability.
+- Profile visibility and content visibility are separate: workout activity, achievements, progress photos, measurements, and profile sections each have independent settings.
+- Nutrition logs, body measurements, progress photos, and detailed workout records are private by default and never become public merely because the profile is public.
+- Provide a preview of what others can see and explain visibility changes.
 
 ### 3D Anatomy
 Interactive muscular anatomy with rotation, zoom, camera presets, muscle selection, and approximate progress views. A preset or measurement-based avatar is not a clinical anatomical reconstruction.
@@ -66,13 +75,12 @@ Progress photographs are highly personal. In the initial self-hosted release:
 - Do not generate public URLs or enable sharing by default.
 - Provide explicit deletion and export controls.
 - Warn users that ordinary local storage is not automatically encrypted; recommend full-disk encryption and encrypted backups.
-- Strip unnecessary EXIF metadata from copies used for display/export where feasible, while preserving originals only if the user explicitly chooses.
+- Strip unnecessary EXIF metadata from display/export copies where feasible.
 - Do not infer health conditions or body composition from photographs.
 
 ## Initial non-goals
 
-- Public multi-tenant hosting.
-- Social network or public user profiles.
+- Public multi-tenant hosting or social profiles in the initial release.
 - Medical diagnosis or treatment.
 - Automatic cloud synchronisation.
 - Sending personal data to external AI services by default.
