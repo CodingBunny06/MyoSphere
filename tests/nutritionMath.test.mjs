@@ -16,7 +16,7 @@ test("rejects invalid portion weights and invalid nutrient values", () => {
   assert.throws(() => scalePer100g({ calories: -1, protein: 1, carbs: 1, fat: 1, fibre: 1 }, 100), RangeError);
 });
 
-test("sums only entries for the selected date and treats missing fibre as zero", () => {
+test("sums only entries for the selected date and tracks missing fibre as unknown", () => {
   const entries = [
     { date: "2026-11-22", calories: 200, protein: 10, carbs: 20, fat: 5, fibre: 3 },
     { date: "2026-11-22", calories: 100, protein: 4, carbs: 12, fat: 2 },
@@ -24,6 +24,7 @@ test("sums only entries for the selected date and treats missing fibre as zero",
   ];
   assert.deepEqual(sumEntriesForDate(entries, "2026-11-22"), {
     calories: 300, protein: 14, carbs: 32, fat: 7, fibre: 3,
+    fibreUnknown: 1,
   });
 });
 
