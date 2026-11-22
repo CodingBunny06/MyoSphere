@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "MyoSphere",
+  "short_name": "MyoSphere",
+  "description": "Your training, nutrition and progress in one place.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#111713",
+  "theme_color": "#111713",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
