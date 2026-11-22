@@ -12,6 +12,19 @@ const themeOptions: { id: Theme; name: string; description: string; colors: stri
   { id: "solar", name: "Solar flare", description: "Amber · molten orange", colors: ["#17100b", "#ffbd59", "#ff704d"] },
 ];
 const sections: Section[] = ["Overview", "Training", "Nutrition", "Progress", "Studio"];
+function readEntries(key: string): Array<Record<string, unknown>> {
+  try {
+    const value = window.localStorage.getItem(key);
+    return value ? (JSON.parse(value) as Array<Record<string, unknown>>) : [];
+  } catch {
+    return [];
+  }
+}
+
+function localDateLabel() {
+  return new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" }).format(new Date()).toUpperCase();
+}
+
 const navIcons: Record<Section, string> = {
   Overview: "⌂", Training: "↗", Nutrition: "◒", Progress: "◷", Studio: "✳", Settings: "⚙",
 };
@@ -19,6 +32,7 @@ const navIcons: Record<Section, string> = {
 function App() {
   const [active, setActive] = useState<Section>("Overview");
   const [showProfile, setShowProfile] = useState(false);
+  const [overviewMetrics, setOverviewMetrics] = useState({ workouts: 0, calories: 0, checkIns: 0 });
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = window.localStorage.getItem("myosphere-theme");
     return themeOptions.some((option) => option.id === saved) ? (saved as Theme) : "cyberpunk";
@@ -72,7 +86,7 @@ function App() {
                 </div>
               </section>
               <section className="welcome-row">
-                <div><div className="eyebrow">SUNDAY, NOVEMBER 22</div><h1>Your space to <em>get stronger.</em></h1><p className="subheading">A little progress, consistently made.</p></div>
+                <div><div className="eyebrow">{localDateLabel()}</div><h1>Your space to <em>get stronger.</em></h1><p className="subheading">A little progress, consistently made.</p></div>
                 <div className="streak-card"><span className="streak-symbol">✳</span><div><strong>0 day streak</strong><small>Your next chapter starts today</small></div></div>
               </section>
 
@@ -107,9 +121,9 @@ function App() {
 
               <section className="section-heading"><div><span className="eyebrow">YOUR OVERVIEW</span><h2>The essentials</h2></div><span className="muted-label">A fresh start</span></section>
               <section className="metric-grid">
-                <article className="metric-card"><div className="metric-top"><span>TRAINING</span><span className="metric-icon">↗</span></div><strong>—</strong><p>Workouts this week</p><div className="metric-foot">Log your first session <span>→</span></div></article>
-                <article className="metric-card"><div className="metric-top"><span>NUTRITION</span><span className="metric-icon">◒</span></div><strong>—</strong><p>Daily energy logged</p><div className="metric-foot">Start a food diary <span>→</span></div></article>
-                <article className="metric-card"><div className="metric-top"><span>PROGRESS</span><span className="metric-icon">◷</span></div><strong>—</strong><p>Progress check-ins</p><div className="metric-foot">Add your first check-in <span>→</span></div></article>
+                <article className="metric-card"><div className="metric-top"><span>TRAINING</span><span className="metric-icon">↗</span></div><strong>{overviewMetrics.workouts}</strong><p>Workouts this week</p><div className="metric-foot">Open training log <span>→</span></div></article>
+                <article className="metric-card"><div className="metric-top"><span>NUTRITION</span><span className="metric-icon">◒</span></div><strong>{overviewMetrics.calories.toLocaleString()}</strong><p>Calories logged today</p><div className="metric-foot">Open food diary <span>→</span></div></article>
+                <article className="metric-card"><div className="metric-top"><span>PROGRESS</span><span className="metric-icon">◷</span></div><strong>{overviewMetrics.checkIns}</strong><p>Progress check-ins</p><div className="metric-foot">Open progress journal <span>→</span></div></article>
               </section>
 
               <section className="lower-grid">
