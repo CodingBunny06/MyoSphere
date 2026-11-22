@@ -177,9 +177,7 @@ function App() {
               </div>
               <div className="settings-footnote"><span>⌑</span> Theme preferences are stored in this browser only. They don't change your account or share data externally.</div>
             </section>
-          ) : (
-            <section className="coming-soon"><span className="eyebrow">MYOSPHERE / {active.toUpperCase()}</span><div className="coming-icon">{navIcons[active]}</div><h1>{active}<em> is taking shape.</em></h1><p>This space is part of the MyoSphere roadmap. We're building the foundations first.</p><button className="primary-button" onClick={() => setActive("Overview")}>Back to overview <span>↗</span></button></section>
-          )}
+          ) : null}
         </div>
         <nav className="mobile-nav" aria-label="Mobile navigation">
           {sections.map((section) => <button key={section} className={active === section ? "mobile-nav-item selected" : "mobile-nav-item"} onClick={() => setActive(section)}><span>{navIcons[section]}</span><small>{section}</small></button>)}
