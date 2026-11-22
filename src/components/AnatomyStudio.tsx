@@ -16,6 +16,20 @@ const categoryColor = (category: string) => {
   return palette[hash % palette.length];
 };
 
+function disposeModel(root: THREE.Object3D) {
+  root.traverse((obj) => {
+    if (!(obj instanceof THREE.Mesh)) return;
+    obj.geometry.dispose();
+    const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+    materials.forEach((material) => {
+      Object.values(material).forEach((value) => {
+        if (value instanceof THREE.Texture) value.dispose();
+      });
+      material.dispose();
+    });
+  });
+}
+
 export default function AnatomyStudio() {
   const mountRef = useRef<HTMLDivElement>(null);
   const objectsRef = useRef<THREE.Object3D[]>([]);
@@ -63,7 +77,12 @@ export default function AnatomyStudio() {
     objectsRef.current = [];
     setLoading(true); setLoadError(""); setProgress(0); setSelectedKey("");
     loader.load(`/models/anatomy-${sex}.glb`, (gltf) => {
-      if (disposed) return;
+      if (disposed) {
+        // A model can finish loading after the user switches sex or leaves
+        // the page. Release its GPU resources instead of leaking the scene.
+        disposeModel(gltf.scene);
+        return;
+      }
       const root = gltf.scene;
       const bounds = new THREE.Box3().setFromObject(root);
       const size = bounds.getSize(new THREE.Vector3());
@@ -139,7 +158,7 @@ export default function AnatomyStudio() {
     let raf = 0; const animate = () => { raf = requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }; animate();
     return () => {
       disposed = true; cancelAnimationFrame(raf); observer.disconnect(); controls.dispose(); renderer.domElement.removeEventListener("click", onClick);
-      scene.traverse((obj) => { if (obj instanceof THREE.Mesh) { obj.geometry.dispose(); const mats = Array.isArray(obj.material) ? obj.material : [obj.material]; mats.forEach((mat) => mat.dispose()); } });
+      disposeModel(scene);
       renderer.dispose(); mount.replaceChildren(); objectsRef.current = [];
     };
   }, [sex]);
