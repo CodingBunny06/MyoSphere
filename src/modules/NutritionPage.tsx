@@ -16,7 +16,7 @@ function readMeals():MealEntry[]{
 }
 function rounded(value:number,digits=1){return Number(value.toFixed(digits))}
 function FoodCard({food,onSelect}:{food:FoodReference;onSelect:(food:FoodReference)=>void}){
- return <article className="food-reference-card"><div><span>{food.category.toUpperCase()} · {food.state.toUpperCase()}</span><strong>{food.name}</strong><small>{food.kcal} kcal · P {food.protein}g · C {food.carbs}g · F {food.fat}g per 100g</small></div><button type="button" onClick={()=>onSelect(food)}>Add ↗</button></article>;
+ return <article className="food-reference-card"><div><span>{food.category.toUpperCase()} · {food.state.toUpperCase()} · PROVISIONAL REFERENCE</span><strong>{food.name}</strong><small>{food.kcal} kcal · P {food.protein}g · C {food.carbs}g · F {food.fat}g per 100g</small></div><button type="button" onClick={()=>onSelect(food)}>Add ↗</button></article>;
 }
 export function NutritionPage(){
  const [entries,setEntries]=useState<MealEntry[]>(readMeals);
@@ -60,7 +60,7 @@ export function NutritionPage(){
     <label>Amount eaten (g)<input type="number" min="1" max="5000" step="1" value={grams} onChange={e=>setGrams(e.target.value)} required/></label>
     <label>Meal<select value={meal} onChange={e=>setMeal(e.target.value)}><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Meal</option></select></label>
     <button className="module-submit">Add food <span>↗</span></button>
-    <p className="food-source-note">Source: {selected.source}. {selected.note??"Generic unbranded food reference."} Values are scaled from a 100 g edible portion; preparation and brands can differ.</p>
+    <p className="food-source-note">Source family: {selected.source}. Exact source-record matching and nutrient verification are still pending. {selected.note??"Generic unbranded food reference."} Values are provisional and scaled from a 100 g edible portion; preparation and brands can differ.</p>
    </form>}
   </section>
   <section className="module-panel custom-food-panel">
@@ -77,6 +77,6 @@ export function NutritionPage(){
    {entries.some(e=>e.date===date)?<div className="module-entry-list">{entries.filter(e=>e.date===date).map(e=><article className="module-entry" key={e.id}><div><strong>{e.food}{e.grams ? ` · ${e.grams} g` : ""}</strong><small>{e.meal ? `${e.meal} · ` : ""}{e.protein}g protein · {e.carbs}g carbs · {e.fat}g fat · {e.source}</small></div><b>{e.calories} kcal</b><button aria-label={`Delete ${e.food} entry`} onClick={()=>remove(e.id)}>×</button></article>)}</div>:<div className="module-empty"><span>◒</span><strong>No food entries for this day.</strong><p>Choose a food from the reference database to start.</p></div>}
   </section>
   {notice&&<p className="photo-feedback success" role="status">{notice}</p>}
-  <p className="module-privacy">Food reference values are generic per-100 g estimates from USDA FoodData Central. They are not branded labels or laboratory analysis of your meal. Weighed ingredients and package labels are more accurate for mixed dishes. Older manual diary entries remain in the previous local diary version.</p>
+  <p className="module-privacy">Food reference values are provisional generic per-100 g estimates associated with USDA FoodData Central search references; exact record IDs and nutrient-by-nutrient verification are pending. Do not treat them as exact. Branded labels and weighed ingredients are preferable for mixed dishes. Older manual diary entries are migrated from the previous local diary version when the new diary is first opened.</p>
  </section>;
 }
