@@ -4,6 +4,8 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 export function BarcodeScanner({ onDetected, onClose }: { onDetected: (code: string) => void; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState("");
+  const onDetectedRef = useRef(onDetected);
+  useEffect(() => { onDetectedRef.current = onDetected; }, [onDetected]);
   useEffect(() => {
     let active = true;
     let controls: { stop: () => void } | undefined;
@@ -17,13 +19,13 @@ export function BarcodeScanner({ onDetected, onClose }: { onDetected: (code: str
       if (result && active) {
         active = false;
         streamControls.stop();
-        onDetected(result.getText());
+        onDetectedRef.current(result.getText());
       }
     }).then((streamControls) => { controls = streamControls; }).catch(() => {
       if (active) setError("Could not start the camera. Allow camera access or enter the barcode manually.");
     });
     return () => { active = false; controls?.stop(); };
-  }, [onDetected]);
+  }, []);
   return <div className="barcode-scanner">
     <div className="barcode-scanner-heading"><strong>Scan product barcode</strong><button type="button" onClick={onClose}>Close</button></div>
     <video ref={videoRef} muted playsInline />
