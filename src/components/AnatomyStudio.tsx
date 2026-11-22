@@ -4,6 +4,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { ANATOMY_BY_KEY, ATTRIBUTION } from "open-anatomy-3d";
+import "./anatomy-v2.css";
 
 type Sex = "male" | "female";
 type System = "skin" | "skeleton" | "muscles" | "organs" | "vessels" | "nerves";
