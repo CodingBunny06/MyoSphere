@@ -1,19 +1,58 @@
 # MyoSphere
 
-**An open-source, self-hosted fitness platform.**
+**An open-source, local-first fitness platform.**
 
-MyoSphere aims to bring workout tracking, nutrition, interactive 3D anatomy, exercise visualization, and optional AI-powered insights into one platform.
+MyoSphere brings workout tracking, nutrition, body progress, interactive 3D anatomy, exercise visualization, and optional AI-powered insights into one platform.
 
-> **Development status:** Stage 0 — foundation and technical validation. Not yet suitable for production or real personal fitness records.
+> **Development status:** Early Stage 0 — responsive frontend shell is now in place. Not yet suitable for production or real personal fitness records.
+
+## Current prototype
+
+- Responsive React + TypeScript + Vite dashboard.
+- Navigation placeholders for Overview, Training, Nutrition, Progress, and Studio.
+- Mobile-first layout with a mobile navigation bar.
+- PWA manifest foundation for a future iPhone Home Screen install.
+- Private-by-default product direction.
+
+## Run locally
+
+Requirements: Node.js 20 or newer and npm.
+
+```bash
+git clone https://github.com/CodingBunny06/MyoSphere.git
+cd MyoSphere
+npm install
+npm run dev
+```
+
+Open the local URL printed by Vite.
+
+To preview on an iPhone connected to the same Wi-Fi:
+1. Find your Mac's local IP address in System Settings → Wi-Fi → Details.
+2. Keep the Vite development server running.
+3. Open `http://YOUR-MAC-IP:5173` in iPhone Safari.
+
+This is a development preview only. Do not expose the development server to an untrusted network.
+
+Build and type-check:
+
+```bash
+npm run build
+```
+
+## Mobile direction
+
+MyoSphere is being developed as a responsive web app first, with a PWA-ready manifest. Native iOS packaging with Capacitor is planned after the web experience and local data layer are stable.
 
 ## Planned modules
 
 - **Workout Hub:** routines, sets, reps, loads, training history, personal records, and progression.
 - **Nutrition Hub:** food search, meal logging, calories, macros, and hydration.
+- **Body Progress:** private progress photos, check-ins, measurements, and comparisons.
 - **3D Anatomy:** interactive muscular anatomy with selectable muscle groups.
 - **Exercise Studio:** rotatable 3D exercise demonstrations with playback controls.
 - **AI Fitness Intelligence:** optional insights based on data the user explicitly authorizes.
-- **Dashboard:** a unified view of training and nutrition progress.
+- **Profiles:** future public/private accounts with per-content visibility controls.
 
 ## Principles
 
@@ -23,22 +62,6 @@ MyoSphere aims to bring workout tracking, nutrition, interactive 3D anatomy, exe
 - Clearly distinguish measured data, estimates, and visual approximations.
 - Testable, accessible, maintainable software.
 - Third-party assets and datasets require verified licences.
-
-## Planned stack
-
-| Area | Initial choice |
-|---|---|
-| Web | React, TypeScript, Vite |
-| UI | Tailwind CSS |
-| 3D | Three.js, React Three Fiber |
-| API | Node.js, TypeScript, Fastify |
-| Database | SQLite |
-| State | Zustand |
-| Charts | Recharts |
-| Tests | Vitest, Playwright |
-| Mobile | Capacitor (later phase) |
-
-Choices will be validated during Stage 0.
 
 ## Project documentation
 
