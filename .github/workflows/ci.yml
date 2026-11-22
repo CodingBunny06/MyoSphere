@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  repository-check:
+    name: Repository safety checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check required project files
+        run: |
+          test -s README.md
+          test -s LICENSE
+          test -s SECURITY.md
+          test -s CONTRIBUTING.md
+          test -s docs/ARCHITECTURE.md
+          test -s docs/STAGE-0-CHECKLIST.md
+
+      - name: Check for common local data files
+        run: |
+          if find . -type f \( -name '*.sqlite' -o -name '*.sqlite3' -o -name '*.db' -o -name '.env' \) -not -path './.git/*' | grep -q .; then
+            echo "Unexpected local database or .env file found in repository."
+            exit 1
+          fi
