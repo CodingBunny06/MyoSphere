@@ -1,17 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import AnatomyStudio from "./components/AnatomyStudio";
 
-type Section = "Overview" | "Training" | "Nutrition" | "Progress" | "Studio";
+type Section = "Overview" | "Training" | "Nutrition" | "Progress" | "Studio" | "Settings";
+type Theme = "cyberpunk" | "matrix" | "synthwave" | "arctic" | "solar";
+const themeOptions: { id: Theme; name: string; description: string; colors: string[] }[] = [
+  { id: "cyberpunk", name: "Cyberpunk", description: "Neon cyan · electric magenta", colors: ["#080b14", "#62f3ff", "#ff4fd8"] },
+  { id: "matrix", name: "Matrix", description: "Terminal green · acid lime", colors: ["#07110d", "#65ff9a", "#c7ff54"] },
+  { id: "synthwave", name: "Synthwave", description: "Ultraviolet · hot pink", colors: ["#10091d", "#ad7cff", "#ff5ca8"] },
+  { id: "arctic", name: "Arctic", description: "Ice blue · glacier teal", colors: ["#07131d", "#83ddff", "#5effd0"] },
+  { id: "solar", name: "Solar flare", description: "Amber · molten orange", colors: ["#17100b", "#ffbd59", "#ff704d"] },
+];
 const sections: Section[] = ["Overview", "Training", "Nutrition", "Progress", "Studio"];
 const navIcons: Record<Section, string> = {
-  Overview: "⌂", Training: "↗", Nutrition: "◒", Progress: "◷", Studio: "✳",
+  Overview: "⌂", Training: "↗", Nutrition: "◒", Progress: "◷", Studio: "✳", Settings: "⚙",
 };
 
 function App() {
   const [active, setActive] = useState<Section>("Overview");
   const [showProfile, setShowProfile] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = window.localStorage.getItem("myosphere-theme");
+    return themeOptions.some((option) => option.id === saved) ? (saved as Theme) : "cyberpunk";
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem("myosphere-theme", theme);
+  }, [theme]);
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-theme={theme}>
       <aside className="sidebar">
         <a className="brand" href="#" onClick={() => setActive("Overview")}>
           <span className="brand-mark">M</span>
@@ -27,6 +44,7 @@ function App() {
           ))}
         </nav>
         <div className="sidebar-bottom">
+          <button className="settings-shortcut" onClick={() => setActive("Settings")}><span>⚙</span> Settings</button>
           <div className="privacy-note"><span className="lock-icon">⌑</span><div><strong>Your space, your data</strong><small>Private by default</small></div></div>
           <div className="sidebar-version">MYOSPHERE · EARLY ACCESS</div>
         </div>
@@ -39,13 +57,19 @@ function App() {
           <div className="top-actions">
             <span className="private-chip"><span /> Private space</span>
             <button className="avatar-button" aria-label="Open profile menu" onClick={() => setShowProfile(!showProfile)}>B</button>
-            {showProfile && <div className="profile-popover"><strong>Your profile</strong><span>Local preview</span><button onClick={() => setShowProfile(false)}>Close</button></div>}
+            {showProfile && <div className="profile-popover"><strong>Your profile</strong><span>Local preview</span><button onClick={() => { setActive("Settings"); setShowProfile(false); }}>⚙ Settings</button><button onClick={() => setShowProfile(false)}>Close</button></div>}
           </div>
         </header>
 
         <div className="page-content">
           {active === "Overview" ? (
             <>
+              <section className="quote-marquee" aria-label="Motivation from athletes">
+                <div className="quote-track">
+                  <div className="quote-set"><span>“The last three or four reps is what makes the muscle grow.” <b>— ARNOLD SCHWARZENEGGER</b></span><i>✳</i><span>“Everybody wants to be a bodybuilder, but nobody wants to lift no heavy-ass weights.” <b>— RONNIE COLEMAN</b></span><i>✳</i></div>
+                  <div className="quote-set" aria-hidden="true"><span>“The last three or four reps is what makes the muscle grow.” <b>— ARNOLD SCHWARZENEGGER</b></span><i>✳</i><span>“Everybody wants to be a bodybuilder, but nobody wants to lift no heavy-ass weights.” <b>— RONNIE COLEMAN</b></span><i>✳</i></div>
+                </div>
+              </section>
               <section className="welcome-row">
                 <div><div className="eyebrow">SUNDAY, NOVEMBER 22</div><h1>Your space to <em>get stronger.</em></h1><p className="subheading">A little progress, consistently made.</p></div>
                 <div className="streak-card"><span className="streak-symbol">✳</span><div><strong>0 day streak</strong><small>Your next chapter starts today</small></div></div>
@@ -93,6 +117,23 @@ function App() {
               </section>
               <footer className="page-footer"><span>MYOSPHERE · YOUR FITNESS, IN YOUR ORBIT</span><span>LOCAL-FIRST · PRIVATE BY DEFAULT</span></footer>
             </>
+          ) : active === "Studio" ? (
+            <AnatomyStudio />
+          ) : active === "Settings" ? (
+            <section className="settings-page">
+              <div className="settings-heading"><span className="eyebrow">MYOSPHERE / PREFERENCES</span><h1>Make it <em>yours.</em></h1><p>Choose the colour atmosphere for your workspace. Your selection stays saved on this device.</p></div>
+              <div className="settings-section-title"><div><span className="eyebrow">APPEARANCE</span><h2>Colour themes</h2></div><span className="settings-local-note">SAVED LOCALLY</span></div>
+              <div className="theme-grid">
+                {themeOptions.map((option) => (
+                  <button key={option.id} className={theme === option.id ? "theme-option selected" : "theme-option"} onClick={() => setTheme(option.id)} aria-pressed={theme === option.id}>
+                    <span className="theme-preview" style={{ background: option.colors[0] }}><i style={{ background: option.colors[1] }} /><i style={{ background: option.colors[2] }} /><b style={{ background: option.colors[1] }} /></span>
+                    <span className="theme-option-copy"><strong>{option.name}</strong><small>{option.description}</small></span>
+                    <span className="theme-check">{theme === option.id ? "✓" : "○"}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="settings-footnote"><span>⌑</span> Theme preferences are stored in this browser only. They don't change your account or share data externally.</div>
+            </section>
           ) : (
             <section className="coming-soon"><span className="eyebrow">MYOSPHERE / {active.toUpperCase()}</span><div className="coming-icon">{navIcons[active]}</div><h1>{active}<em> is taking shape.</em></h1><p>This space is part of the MyoSphere roadmap. We're building the foundations first.</p><button className="primary-button" onClick={() => setActive("Overview")}>Back to overview <span>↗</span></button></section>
           )}
