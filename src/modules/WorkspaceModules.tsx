@@ -29,32 +29,91 @@ function PageHeading({ eyebrow, title, description }: { eyebrow: string; title: 
   return <div className="module-heading"><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{description}</p></div>;
 }
 
+type RoutineDay = { day: string; focus: string; exercises: string[] };
+const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const exerciseLibrary = [
+  { name: "Barbell bench press", group: "Chest", equipment: "Barbell" },
+  { name: "Incline dumbbell press", group: "Chest", equipment: "Dumbbells" },
+  { name: "Cable fly", group: "Chest", equipment: "Cable" },
+  { name: "Push-up", group: "Chest", equipment: "Bodyweight" },
+  { name: "Lat pulldown", group: "Back", equipment: "Cable" },
+  { name: "Seated cable row", group: "Back", equipment: "Cable" },
+  { name: "One-arm dumbbell row", group: "Back", equipment: "Dumbbells" },
+  { name: "Pull-up", group: "Back", equipment: "Bodyweight" },
+  { name: "Overhead press", group: "Shoulders", equipment: "Barbell" },
+  { name: "Lateral raise", group: "Shoulders", equipment: "Dumbbells" },
+  { name: "Reverse fly", group: "Shoulders", equipment: "Dumbbells" },
+  { name: "Barbell curl", group: "Arms", equipment: "Barbell" },
+  { name: "Hammer curl", group: "Arms", equipment: "Dumbbells" },
+  { name: "Triceps pushdown", group: "Arms", equipment: "Cable" },
+  { name: "Overhead triceps extension", group: "Arms", equipment: "Cable" },
+  { name: "Barbell squat", group: "Legs", equipment: "Barbell" },
+  { name: "Romanian deadlift", group: "Legs", equipment: "Barbell" },
+  { name: "Leg extension", group: "Legs", equipment: "Machine" },
+  { name: "Leg curl", group: "Legs", equipment: "Machine" },
+  { name: "Standing calf raise", group: "Legs", equipment: "Machine" },
+  { name: "Plank", group: "Core", equipment: "Bodyweight" },
+  { name: "Cable crunch", group: "Core", equipment: "Cable" },
+];
+const defaultRoutine = (): RoutineDay[] => weekDays.map((day) => ({ day, focus: "", exercises: [] }));
+
 export function TrainingPage() {
   const [entries, setEntries] = useLocalData<TrainingEntry[]>("myosphere-training-v1", []);
+  const [routine, setRoutine] = useLocalData<RoutineDay[]>("myosphere-routine-v1", defaultRoutine());
   const [date, setDate] = useState(today());
-  const [exercise, setExercise] = useState("");
+  const [exercise, setExercise] = useState(exerciseLibrary[0].name);
   const [sets, setSets] = useState("3");
   const [reps, setReps] = useState("10");
   const [load, setLoad] = useState("0");
+  const [activeDay, setActiveDay] = useState("Monday");
+  const [focusDraft, setFocusDraft] = useState("");
+  const [exerciseDraft, setExerciseDraft] = useState(exerciseLibrary[0].name);
+  const [groupFilter, setGroupFilter] = useState("All");
   const totalVolume = useMemo(() => entries.reduce((sum, item) => sum + item.sets * item.reps * item.load, 0), [entries]);
+  const currentDay = routine.find((item) => item.day === activeDay) ?? defaultRoutine()[0];
+  const todayEntries = entries.filter((entry) => entry.date === date);
   const addEntry = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!exercise.trim() || Number(sets) < 1 || Number(reps) < 1 || Number(load) < 0) return;
     setEntries((current) => [{ id: makeId(), date, exercise: exercise.trim(), sets: Number(sets), reps: Number(reps), load: Number(load) }, ...current]);
-    setExercise("");
   };
+  const saveFocus = () => setRoutine((current) => current.map((item) => item.day === activeDay ? { ...item, focus: focusDraft.trim() } : item));
+  const addRoutineExercise = () => {
+    if (!exerciseDraft) return;
+    setRoutine((current) => current.map((item) => item.day === activeDay && !item.exercises.includes(exerciseDraft) ? { ...item, exercises: [...item.exercises, exerciseDraft] } : item));
+  };
+  const removeRoutineExercise = (name: string) => setRoutine((current) => current.map((item) => item.day === activeDay ? { ...item, exercises: item.exercises.filter((value) => value !== name) } : item));
+  const filteredExercises = exerciseLibrary.filter((item) => groupFilter === "All" || item.group === groupFilter);
   return <section className="module-page">
-    <PageHeading eyebrow="MYOSPHERE / TRAINING LOG" title={<>Train with <em>intent.</em></>} description="Record your working sets, track training volume and build a history you can learn from." />
+    <PageHeading eyebrow="MYOSPHERE / TRAINING HUB" title={<>Train with <em>intent.</em></>} description="Build a weekly routine, choose movements from the exercise library and record your working sets." />
     <div className="module-stat-grid">
       <article className="module-stat"><span>LOGGED SET ENTRIES</span><strong>{entries.length}</strong><small>Across all sessions</small></article>
       <article className="module-stat"><span>RECORDED VOLUME</span><strong>{Math.round(totalVolume).toLocaleString()}</strong><small>Load × reps × sets · kg</small></article>
-      <article className="module-stat"><span>EXERCISES</span><strong>{new Set(entries.map((entry) => entry.exercise.toLowerCase())).size}</strong><small>Unique movements</small></article>
+      <article className="module-stat"><span>EXERCISES IN LIBRARY</span><strong>{exerciseLibrary.length}</strong><small>Starter movement catalogue</small></article>
     </div>
-    <div className="module-columns">
+
+    <section className="module-panel routine-panel">
+      <div className="module-panel-title"><div><span className="eyebrow">WEEKLY PROGRAMMING</span><h2>Your training split</h2></div><span className="module-count">EDITABLE · SAVED LOCALLY</span></div>
+      <div className="routine-week">{routine.map((item) => <button key={item.day} className={activeDay === item.day ? "routine-day active" : "routine-day"} onClick={() => { setActiveDay(item.day); setFocusDraft(item.focus); }}><span>{item.day.slice(0, 3).toUpperCase()}</span><strong>{item.focus || "Rest / unset"}</strong><small>{item.exercises.length} movements</small></button>)}</div>
+      <div className="routine-editor">
+        <div className="routine-editor-heading"><div><span className="eyebrow">{activeDay.toUpperCase()}</span><h3>Plan this day</h3></div><span className="module-count">{currentDay.exercises.length} planned</span></div>
+        <div className="routine-edit-row">
+          <label>Session focus<input value={focusDraft} onChange={(event) => setFocusDraft(event.target.value)} placeholder="e.g. Push, Pull, Full body, Rest" maxLength={40} /></label>
+          <button className="module-secondary" type="button" onClick={saveFocus}>Save focus</button>
+        </div>
+        <div className="routine-edit-row">
+          <label>Add exercise<select value={exerciseDraft} onChange={(event) => setExerciseDraft(event.target.value)}>{exerciseLibrary.map((item) => <option key={item.name} value={item.name}>{item.name} · {item.group}</option>)}</select></label>
+          <button className="module-secondary" type="button" onClick={addRoutineExercise}>＋ Add</button>
+        </div>
+        <div className="routine-exercise-list">{currentDay.exercises.length ? currentDay.exercises.map((name) => <div className="routine-exercise" key={name}><span>{name}</span><button type="button" aria-label={`Remove ${name} from ${activeDay}`} onClick={() => removeRoutineExercise(name)}>×</button></div>) : <p className="routine-empty">No movements planned. Add exercises to build this session.</p>}</div>
+      </div>
+    </section>
+
+    <div className="module-columns training-workspace">
       <form className="module-panel module-form" onSubmit={addEntry}>
-        <div className="module-panel-title"><div><span className="eyebrow">NEW RECORD</span><h2>Add a working set</h2></div><span className="module-plus">＋</span></div>
+        <div className="module-panel-title"><div><span className="eyebrow">SESSION LOGGER</span><h2>Record working sets</h2></div><span className="module-plus">＋</span></div>
         <label>Date<input type="date" value={date} onChange={(event) => setDate(event.target.value)} required /></label>
-        <label>Exercise<input value={exercise} onChange={(event) => setExercise(event.target.value)} placeholder="e.g. Barbell bench press" required maxLength={70} /></label>
+        <label>Exercise<select value={exercise} onChange={(event) => setExercise(event.target.value)}>{exerciseLibrary.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></label>
         <div className="module-input-row">
           <label>Sets<input type="number" min="1" max="30" value={sets} onChange={(event) => setSets(event.target.value)} required /></label>
           <label>Reps<input type="number" min="1" max="100" value={reps} onChange={(event) => setReps(event.target.value)} required /></label>
@@ -63,11 +122,17 @@ export function TrainingPage() {
         <button className="module-submit" type="submit">Save training entry <span>↗</span></button>
       </form>
       <section className="module-panel module-history">
-        <div className="module-panel-title"><div><span className="eyebrow">YOUR ACTIVITY</span><h2>Training history</h2></div><span className="module-count">{entries.length} entries</span></div>
-        {entries.length ? <div className="module-entry-list">{entries.map((entry) => <article className="module-entry" key={entry.id}><div><strong>{entry.exercise}</strong><small>{entry.date} · {entry.sets} sets × {entry.reps} reps</small></div><b>{entry.load} kg</b><button aria-label={`Delete ${entry.exercise} entry`} onClick={() => setEntries((current) => current.filter((item) => item.id !== entry.id))}>×</button></article>)}</div> : <div className="module-empty"><span>↗</span><strong>Your training history starts here.</strong><p>Add your first exercise entry to see it appear here.</p></div>}
+        <div className="module-panel-title"><div><span className="eyebrow">YOUR ACTIVITY</span><h2>Training history</h2></div><span className="module-count">{todayEntries.length} today</span></div>
+        {entries.length ? <div className="module-entry-list">{entries.slice(0, 30).map((entry) => <article className="module-entry" key={entry.id}><div><strong>{entry.exercise}</strong><small>{entry.date} · {entry.sets} sets × {entry.reps} reps</small></div><b>{entry.load} kg</b><button aria-label={`Delete ${entry.exercise} entry`} onClick={() => setEntries((current) => current.filter((item) => item.id !== entry.id))}>×</button></article>)}</div> : <div className="module-empty"><span>↗</span><strong>Your training history starts here.</strong><p>Log your first working sets to see them here.</p></div>}
       </section>
     </div>
-    <p className="module-privacy">⌑ Saved locally in this browser. No account or cloud sync is connected yet.</p>
+
+    <section className="module-panel exercise-library-panel">
+      <div className="module-panel-title"><div><span className="eyebrow">MOVEMENT DATABASE</span><h2>Exercise library</h2></div><span className="module-count">{filteredExercises.length} movements</span></div>
+      <div className="exercise-filters">{["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core"].map((group) => <button type="button" key={group} className={groupFilter === group ? "exercise-filter active" : "exercise-filter"} onClick={() => setGroupFilter(group)}>{group}</button>)}</div>
+      <div className="exercise-grid">{filteredExercises.map((item) => <article className="exercise-card" key={item.name}><span>{item.group.toUpperCase()}</span><strong>{item.name}</strong><small>{item.equipment}</small><button type="button" onClick={() => { setExercise(item.name); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Use in logger ↗</button></article>)}</div>
+    </section>
+    <p className="module-privacy">Routine and training entries are saved locally in this browser. The exercise catalogue is a starter set, not a complete coaching prescription.</p>
   </section>;
 }
 
