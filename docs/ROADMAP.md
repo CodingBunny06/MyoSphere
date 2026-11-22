@@ -23,7 +23,18 @@
 - [ ] Nutrient summaries and hydration.
 - [ ] Source attribution and licence review.
 
-## Stage 3 — 3D experience
+## Stage 3 — Body progress and 3D experience
+- [ ] Private progress check-in timeline.
+- [ ] Local progress photo import and management.
+- [ ] Side-by-side photo comparison.
+- [ ] Optional measurement history.
+- [ ] GLB asset pipeline.
+- [ ] Interactive anatomy prototype.
+- [ ] Exercise animation playback.
+- [ ] Muscle-group mapping and educational content.
+- [ ] Performance and accessibility review.
+
+## Stage 4 — Insights
 - [ ] GLB asset pipeline.
 - [ ] Interactive anatomy prototype.
 - [ ] Exercise animation playback.
