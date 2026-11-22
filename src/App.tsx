@@ -42,6 +42,28 @@ function App() {
     window.localStorage.setItem("myosphere-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (active !== "Overview") return;
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+    const localToday = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const training = readEntries("myosphere-training-v1");
+    const workoutDays = new Set(training
+      .filter((entry) => typeof entry.date === "string" && new Date(entry.date + "T00:00:00").getTime() >= monday.getTime())
+      .map((entry) => entry.date as string));
+    const nutrition = readEntries("myosphere-nutrition-v1");
+    const calories = nutrition
+      .filter((entry) => entry.date === localToday)
+      .reduce((total, entry) => total + (typeof entry.calories === "number" ? entry.calories : 0), 0);
+    setOverviewMetrics({
+      workouts: workoutDays.size,
+      calories,
+      checkIns: readEntries("myosphere-progress-v1").length,
+    });
+  }, [active]);
+
   return (
     <div className="app-shell" data-theme={theme}>
       <aside className="sidebar">
@@ -121,9 +143,9 @@ function App() {
 
               <section className="section-heading"><div><span className="eyebrow">YOUR OVERVIEW</span><h2>The essentials</h2></div><span className="muted-label">A fresh start</span></section>
               <section className="metric-grid">
-                <article className="metric-card"><div className="metric-top"><span>TRAINING</span><span className="metric-icon">↗</span></div><strong>{overviewMetrics.workouts}</strong><p>Workouts this week</p><div className="metric-foot">Open training log <span>→</span></div></article>
-                <article className="metric-card"><div className="metric-top"><span>NUTRITION</span><span className="metric-icon">◒</span></div><strong>{overviewMetrics.calories.toLocaleString()}</strong><p>Calories logged today</p><div className="metric-foot">Open food diary <span>→</span></div></article>
-                <article className="metric-card"><div className="metric-top"><span>PROGRESS</span><span className="metric-icon">◷</span></div><strong>{overviewMetrics.checkIns}</strong><p>Progress check-ins</p><div className="metric-foot">Open progress journal <span>→</span></div></article>
+                <article className="metric-card"><div className="metric-top"><span>TRAINING</span><span className="metric-icon">↗</span></div><strong>{overviewMetrics.workouts}</strong><p>Workouts this week</p><button className="metric-foot metric-link" onClick={() => setActive("Training")}>Open training log <span>→</span></button></article>
+                <article className="metric-card"><div className="metric-top"><span>NUTRITION</span><span className="metric-icon">◒</span></div><strong>{overviewMetrics.calories.toLocaleString()}</strong><p>Calories logged today</p><button className="metric-foot metric-link" onClick={() => setActive("Nutrition")}>Open food diary <span>→</span></button></article>
+                <article className="metric-card"><div className="metric-top"><span>PROGRESS</span><span className="metric-icon">◷</span></div><strong>{overviewMetrics.checkIns}</strong><p>Progress check-ins</p><button className="metric-foot metric-link" onClick={() => setActive("Progress")}>Open progress journal <span>→</span></button></article>
               </section>
 
               <section className="lower-grid">
