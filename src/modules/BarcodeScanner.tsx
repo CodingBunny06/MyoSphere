@@ -15,13 +15,20 @@ export function BarcodeScanner({ onDetected, onClose }: { onDetected: (code: str
       return;
     }
     reader.decodeFromVideoDevice(undefined, videoRef.current!, (result, _decodeError, streamControls) => {
+      if (!active) {
+        streamControls.stop();
+        return;
+      }
       controls = streamControls;
-      if (result && active) {
+      if (result) {
         active = false;
         streamControls.stop();
         onDetectedRef.current(result.getText());
       }
-    }).then((streamControls) => { controls = streamControls; }).catch(() => {
+    }).then((streamControls) => {
+      if (!active) streamControls.stop();
+      else controls = streamControls;
+    }).catch(() => {
       if (active) setError("Could not start the camera. Allow camera access or enter the barcode manually.");
     });
     return () => { active = false; controls?.stop(); };
