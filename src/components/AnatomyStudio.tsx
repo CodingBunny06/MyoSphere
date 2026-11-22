@@ -79,6 +79,10 @@ export default function AnatomyStudio() {
         let systemNode: THREE.Object3D | null = obj.parent;
         while (systemNode && !systems.includes(systemNode.name as System)) systemNode = systemNode.parent;
         obj.userData.system = (systemNode && systems.includes(systemNode.name as System) ? systemNode.name : (info && systems.includes(info.system as System) ? info.system : undefined)) as System | undefined;
+        // The upstream GLB contains every anatomical system. Fail closed:
+        // unknown/unwanted meshes (skeleton, organs, vessels, nerves, joints)
+        // must never remain visible just because they were not classified.
+        obj.visible = obj.userData.system ? visible[obj.userData.system] : false;
         if (obj.userData.system === "skin") {
           obj.geometry = obj.geometry.clone();
           obj.geometry.computeVertexNormals();
@@ -90,7 +94,7 @@ export default function AnatomyStudio() {
           obj.material = skinMats.map((mat) => { const clone = mat.clone() as THREE.MeshStandardMaterial; clone.color.multiply(new THREE.Color("#e6b49b")); clone.roughness = 0.86; clone.metalness = 0; return clone; });
         }
         if (info?.system === "muscles") {
-          const color = categoryColor(info.key);
+          const color = info.color || categoryColor(info.category || info.key);
           const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
           obj.material = mats.map((mat) => {
             const clone = mat.clone() as THREE.MeshStandardMaterial;
