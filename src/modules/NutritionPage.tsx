@@ -1,7 +1,8 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { foodReferences, type FoodReference } from "./foodReferences";
+import { migrateLegacyEntries, scalePer100g, sumEntriesForDate } from "./nutritionMath.js";
 
-type MealEntry = { id:string; date:string; meal?:string; food:string; grams:number; calories:number; protein:number; carbs:number; fat:number; fibre:number; source:string; sourceUrl:string; note?:string };
+type MealEntry = { id:string; date:string; meal?:string; food:string; grams:number; calories:number; protein:number; carbs:number; fat:number; fibre:number|null; source:string; sourceUrl:string; note?:string };
 const STORE="myosphere-nutrition-v2";
 const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
 function readMeals():MealEntry[]{
@@ -9,7 +10,7 @@ function readMeals():MealEntry[]{
   const current=localStorage.getItem(STORE);
   if(current)return JSON.parse(current) as MealEntry[];
   const legacy=JSON.parse(localStorage.getItem("myosphere-nutrition-v1")??"[]") as Array<{id:string;date:string;food:string;calories:number;protein:number;carbs:number;fat:number}>;
-  const migrated=legacy.map(item=>({...item,meal:"Meal",grams:0,fibre:0,source:"Legacy manual entry",sourceUrl:"",note:"Original manually entered values preserved; serving weight and source were not recorded."}));
+  const migrated=migrateLegacyEntries(legacy);
   if(migrated.length)localStorage.setItem(STORE,JSON.stringify(migrated));
   return migrated;
  }catch{return[]}
@@ -34,11 +35,11 @@ export function NutritionPage(){
  const [customFat,setCustomFat]=useState("");
  const [customGrams,setCustomGrams]=useState("100");
  const [showCustom,setShowCustom]=useState(false);
- const daily=useMemo(()=>entries.filter(e=>e.date===date).reduce((s,e)=>({calories:s.calories+e.calories,protein:s.protein+e.protein,carbs:s.carbs+e.carbs,fat:s.fat+e.fat,fibre:s.fibre+e.fibre}),{calories:0,protein:0,carbs:0,fat:0,fibre:0}),[entries,date]);
+ const daily=useMemo(()=>sumEntriesForDate(entries,date),[entries,date]);
  const filtered=foodReferences.filter(f=>(category==="All"||f.category===category)&&f.name.toLowerCase().includes(query.toLowerCase()));
  const save=(entry:MealEntry)=>{const next=[entry,...entries];setEntries(next);localStorage.setItem(STORE,JSON.stringify(next));setNotice("Added to your food diary.");};
- const addReference=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();if(!selected)return;const amount=Number(grams);if(!Number.isFinite(amount)||amount<=0||amount>5000)return;const factor=amount/100;save({id:crypto.randomUUID(),date,meal,food:selected.name,grams:amount,calories:rounded(selected.kcal*factor,0),protein:rounded(selected.protein*factor),carbs:rounded(selected.carbs*factor),fat:rounded(selected.fat*factor),fibre:rounded(selected.fibre*factor),source:selected.source,sourceUrl:selected.sourceUrl,note:selected.note});setSelected(null);setGrams("100");};
- const addCustom=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();const vals=[customKcal,customProtein,customCarbs,customFat,customGrams].map(Number);if(!customName.trim()||vals.some(v=>!Number.isFinite(v)||v<0)||vals[4]<=0||vals[4]>5000)return;const [k,p,c,f,g]=vals;const factor=g/100;save({id:crypto.randomUUID(),date,meal,food:customName.trim(),grams:g,calories:rounded(k*factor,0),protein:rounded(p*factor),carbs:rounded(c*factor),fat:rounded(f*factor),fibre:0,source:"User-entered label / recipe",sourceUrl:"",note:"User-entered values per 100 g."});setCustomName("");setNotice("Custom food added. Values are user-provided estimates.");};
+ const addReference=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();if(!selected)return;const amount=Number(grams);if(!Number.isFinite(amount)||amount<=0||amount>5000)return;const scaled=scalePer100g({calories:selected.kcal,protein:selected.protein,carbs:selected.carbs,fat:selected.fat,fibre:selected.fibre},amount);save({id:crypto.randomUUID(),date,meal,food:selected.name,grams:amount,...scaled,source:selected.source,sourceUrl:selected.sourceUrl,note:selected.note});setSelected(null);setGrams("100");};
+ const addCustom=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();const vals=[customKcal,customProtein,customCarbs,customFat,customGrams].map(Number);if(!customName.trim()||vals.some(v=>!Number.isFinite(v)||v<0)||vals[4]<=0||vals[4]>5000)return;const [k,p,c,f,g]=vals;const scaled=scalePer100g({calories:k,protein:p,carbs:c,fat:f,fibre:null},g);save({id:crypto.randomUUID(),date,meal,food:customName.trim(),grams:g,...scaled,source:"User-entered label / recipe",sourceUrl:"",note:"User-entered values per 100 g."});setCustomName("");setNotice("Custom food added. Values are user-provided estimates.");};
  const remove=(id:string)=>{const next=entries.filter(e=>e.id!==id);setEntries(next);localStorage.setItem(STORE,JSON.stringify(next));};
  return <section className="module-page">
   <div className="module-heading"><span className="eyebrow">MYOSPHERE / NUTRITION HUB</span><h1>Fuel your <em>progress.</em></h1><p>Search reference foods, set the amount you actually ate and track daily macros.</p></div>
@@ -49,7 +50,7 @@ export function NutritionPage(){
    <article><span>CARBS</span><strong>{rounded(daily.carbs)} <small>g</small></strong><div className="macro-track carbs"><i style={{width:`${Math.min(daily.carbs,300)/3}%`}}/></div></article>
    <article><span>FAT</span><strong>{rounded(daily.fat)} <small>g</small></strong><div className="macro-track fat"><i style={{width:`${Math.min(daily.fat,120)/1.2}%`}}/></div></article>
   </div>
-  <div className="nutrition-fibre-strip"><span>DIETARY FIBRE</span><strong>{rounded(daily.fibre)} g</strong><span>Calculated from logged reference foods where available.</span></div>
+  <div className="nutrition-fibre-strip"><span>DIETARY FIBRE</span><strong>{daily.fibreUnknown>0?"≥ ":""}{rounded(daily.fibre)} g</strong><span>Known fibre subtotal{daily.fibreUnknown>0?` · ${daily.fibreUnknown} entr${daily.fibreUnknown===1?"y has":"ies have"} no fibre value`:""}; unavailable values are not treated as zero.</span></div>
   <section className="module-panel food-database-panel">
    <div className="module-panel-title"><div><span className="eyebrow">REFERENCE FOOD DATABASE</span><h2>Find a food</h2></div><span className="module-count">{filtered.length} matches</span></div>
    <input className="food-search" aria-label="Search foods" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search rice, oats, egg, chicken, banana…"/>

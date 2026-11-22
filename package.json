@@ -8,20 +8,21 @@
     "build": "npm run prepare:anatomy && tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "prepare:anatomy": "mkdir -p public/models && cp node_modules/open-anatomy-3d/models/anatomy-*.glb public/models/"
+    "prepare:anatomy": "mkdir -p public/models && cp node_modules/open-anatomy-3d/models/anatomy-*.glb public/models/",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "three": "^0.180.0",
+    "three": "^0.187.0",
     "open-anatomy-3d": "^0.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.7",
-    "@vitejs/plugin-react": "^4.7.0",
-    "typescript": "^5.8.3",
-    "vite": "^6.3.5",
-    "@types/three": "^0.180.0"
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "@types/three": "^0.187.0"
   }
 }
