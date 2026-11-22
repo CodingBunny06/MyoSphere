@@ -71,20 +71,31 @@ export default function AnatomyStudio() {
       const scale = 2.5 / Math.max(size.x, size.y, size.z);
       root.scale.setScalar(scale);
       root.position.set(-center.x * scale, -bounds.min.y * scale + 0.02, -center.z * scale);
+      // The model is organised as root-level system groups, then structure
+      // nodes (catalog keys), then one or more render meshes. A render mesh's
+      // own name is not guaranteed to be the catalog key.
+      const systemGroups = new Map<System, THREE.Object3D>();
+      root.children.forEach((child) => {
+        if (systems.includes(child.name as System)) systemGroups.set(child.name as System, child);
+      });
+      for (const [system, group] of systemGroups) group.visible = visible[system];
+
       root.traverse((obj) => {
         if (!(obj instanceof THREE.Mesh)) return;
-        const keyName = obj.name;
-        const info = ANATOMY_BY_KEY[keyName as keyof typeof ANATOMY_BY_KEY];
+        let owner: THREE.Object3D | null = obj;
+        while (owner && !ANATOMY_BY_KEY[owner.name]) owner = owner.parent;
+        const info = owner ? ANATOMY_BY_KEY[owner.name] : undefined;
+        const keyName = info?.key || obj.name;
         obj.userData.structureKey = keyName;
         let systemNode: THREE.Object3D | null = obj.parent;
         while (systemNode && !systems.includes(systemNode.name as System)) systemNode = systemNode.parent;
-        obj.userData.system = (systemNode && systems.includes(systemNode.name as System) ? systemNode.name : (info && systems.includes(info.system as System) ? info.system : undefined)) as System | undefined;
-        // The upstream GLB contains every anatomical system. Fail closed:
-        // unknown/unwanted meshes (skeleton, organs, vessels, nerves, joints)
-        // must never remain visible just because they were not classified.
-        const classifiedSystem = obj.userData.system as System | undefined;
+        const catalogSystem = info?.system;
+        const groupSystem = systemNode?.name;
+        const classifiedSystem = (systems.includes(catalogSystem as System) ? catalogSystem : (systems.includes(groupSystem as System) ? groupSystem : undefined)) as System | undefined;
+        obj.userData.system = classifiedSystem;
+        // Fail closed for every system outside this focused skin/muscle view.
         obj.visible = classifiedSystem ? visible[classifiedSystem] : false;
-        if (obj.userData.system === "skin") {
+        if (classifiedSystem === "skin") {
           obj.geometry = obj.geometry.clone();
           obj.geometry.computeVertexNormals();
           const position = obj.geometry.getAttribute("position") as THREE.BufferAttribute;
@@ -94,7 +105,7 @@ export default function AnatomyStudio() {
           const skinMats = Array.isArray(obj.material) ? obj.material : [obj.material];
           obj.material = skinMats.map((mat) => { const clone = mat.clone() as THREE.MeshStandardMaterial; clone.color.multiply(new THREE.Color("#e6b49b")); clone.roughness = 0.86; clone.metalness = 0; return clone; });
         }
-        if (info?.system === "muscles") {
+        if (classifiedSystem === "muscles" && info) {
           const color = info.color || categoryColor(info.category || info.key);
           const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
           obj.material = mats.map((mat) => {
