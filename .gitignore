@@ -40,3 +40,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+
+# Open Anatomy 3D assets are copied from the npm package during build.
+public/models/*.glb
