@@ -59,3 +59,40 @@
 .progress-entry-main{flex:1;min-width:0}
 @media(max-width:900px){.nutrition-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.module-columns{grid-template-columns:1fr}}
 @media(max-width:650px){.module-page{padding-top:4px}.module-heading{margin-bottom:20px}.module-stat-grid{gap:7px}.module-stat{padding:12px 10px}.module-stat>span{font-size:7px}.module-stat strong{font-size:21px}.module-stat small{font-size:8px}.module-panel{padding:15px 12px}.module-input-row{gap:7px}.module-input-row label{font-size:9px}.module-input-row input{padding:10px 7px}.nutrition-summary{gap:7px}.nutrition-summary>article{padding:13px}.nutrition-summary>article>strong{font-size:19px}.progress-entry-date{width:72px;font-size:8px}}
+
+
+/* Weekly routine planner and exercise catalogue */
+.routine-panel,.exercise-library-panel{margin:0 0 14px}
+.routine-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+.routine-day{min-width:0;text-align:left;padding:11px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:#e8eee7}
+.routine-day>span,.routine-day>strong,.routine-day>small{display:block}
+.routine-day>span{color:var(--muted);font:9px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.8px}
+.routine-day>strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:9px 0 5px;font-size:10px;font-weight:600}
+.routine-day>small{color:var(--muted);font-size:8px}
+.routine-day.active{border-color:var(--lime);background:color-mix(in srgb,var(--lime) 8%,var(--bg));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lime) 14%,transparent)}
+.routine-day.active>span{color:var(--lime)}
+.routine-editor{margin-top:17px;padding-top:16px;border-top:1px solid var(--line)}
+.routine-editor-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.routine-editor-heading h3{margin:5px 0 0;color:#edf1e9;font:600 14px Manrope,ui-sans-serif,sans-serif}
+.routine-edit-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:10px}
+.routine-edit-row label{display:grid;gap:6px;color:#aab6aa;font-size:10px}
+.routine-edit-row input,.routine-edit-row select,.module-form select{width:100%;min-width:0;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:#edf1e9;padding:10px 11px;font:11px ui-sans-serif,system-ui,sans-serif;color-scheme:dark}
+.module-secondary{height:36px;padding:0 13px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);color:var(--lime);font-size:10px;font-weight:650;white-space:nowrap}
+.module-secondary:hover{border-color:var(--lime)}
+.routine-exercise-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.routine-exercise{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:#dce5da;font-size:9px}
+.routine-exercise button{border:0;background:none;color:var(--muted);font-size:15px;padding:0 2px}
+.routine-empty{margin:0;color:var(--muted);font-size:9px}
+.training-workspace{margin-bottom:14px}
+.module-form select{appearance:auto}
+.exercise-filters{display:flex;flex-wrap:wrap;gap:7px;margin:-3px 0 13px}
+.exercise-filter{padding:7px 10px;border:1px solid var(--line);border-radius:20px;background:var(--bg);color:var(--muted);font-size:9px}
+.exercise-filter.active{border-color:var(--lime);color:var(--lime);background:color-mix(in srgb,var(--lime) 8%,var(--bg))}
+.exercise-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.exercise-card{min-width:0;display:flex;flex-direction:column;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
+.exercise-card>span{color:var(--lime);font:8px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.8px}
+.exercise-card strong{margin:7px 0 4px;color:#e7eee6;font-size:10px;line-height:1.4}
+.exercise-card small{color:var(--muted);font-size:8px}
+.exercise-card button{margin-top:10px;padding:0;border:0;background:none;color:var(--lime);font-size:9px}
+@media(max-width:900px){.routine-week{grid-template-columns:repeat(4,minmax(0,1fr))}.exercise-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.routine-week{grid-template-columns:repeat(2,minmax(0,1fr))}.routine-day{padding:10px}.routine-edit-row{grid-template-columns:1fr}.routine-edit-row .module-secondary{justify-self:start}.exercise-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
