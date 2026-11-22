@@ -1,0 +1,61 @@
+.module-page{max-width:1180px;margin:0 auto;padding:8px 0 44px}
+.module-heading{margin:8px 0 28px}
+.module-heading h1{font:600 clamp(30px,3.2vw,42px)/1.15 Manrope,ui-sans-serif,sans-serif;letter-spacing:-1.6px;margin:11px 0 8px;color:#edf1e9}
+.module-heading h1 em{font-style:normal;color:var(--lime)}
+.module-heading p{max-width:600px;margin:0;color:#9aa69b;font-size:12px;line-height:1.7}
+.module-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.module-stat,.nutrition-summary>article,.progress-highlight{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:17px}
+.module-stat>span,.nutrition-summary>article>span{display:block;color:#91a08f;font:9px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:1px}
+.module-stat strong{display:block;color:#edf1e9;font:600 27px Manrope,ui-sans-serif,sans-serif;margin:10px 0 3px}
+.module-stat small{color:var(--muted);font-size:10px}
+.module-columns{display:grid;grid-template-columns:minmax(250px,.85fr) minmax(0,1.15fr);gap:13px;align-items:start}
+.module-panel{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:19px}
+.module-panel-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.module-panel-title h2{font:600 16px Manrope,ui-sans-serif,sans-serif;color:#edf1e9;margin:5px 0 0}
+.module-plus{color:var(--lime);font-size:22px}
+.module-count{color:var(--muted);font-size:9px}
+.module-form{display:grid;gap:13px}
+.module-form label{display:grid;gap:7px;color:#aab6aa;font-size:10px}
+.module-form input,.module-form textarea,.module-date-control input{width:100%;min-width:0;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:#edf1e9;padding:11px 12px;font:12px ui-sans-serif,system-ui,sans-serif;outline:none;color-scheme:dark}
+.module-form input:focus,.module-form textarea:focus,.module-date-control input:focus{border-color:var(--lime);box-shadow:0 0 0 2px color-mix(in srgb,var(--lime) 14%,transparent)}
+.module-form textarea{resize:vertical;line-height:1.5}
+.module-input-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.module-input-row:has(label:nth-child(2):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}
+.module-submit{display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;border-radius:7px;background:var(--lime);color:#142016;padding:12px 14px;font-size:11px;font-weight:700;margin-top:3px}
+.module-submit:hover{filter:brightness(1.08)}
+.module-submit span{font-size:15px}
+.module-entry-list{display:grid}
+.module-entry,.progress-entry{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
+.module-entry>div{flex:1;min-width:0}
+.module-entry strong,.module-entry small,.progress-entry-main strong,.progress-entry-main small{display:block}
+.module-entry strong,.progress-entry-main strong{color:#edf1e9;font-size:11px;font-weight:600}
+.module-entry small,.progress-entry-main small{margin-top:5px;color:var(--muted);font-size:9px;line-height:1.5}
+.module-entry>b{color:var(--lime);font-size:10px;white-space:nowrap}
+.module-entry button,.progress-entry button{flex:0 0 auto;width:25px;height:25px;border:1px solid var(--line);border-radius:50%;background:transparent;color:var(--muted);font-size:16px}
+.module-entry button:hover,.progress-entry button:hover{border-color:#d66b6b;color:#ff9a9a}
+.module-empty{min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;border-top:1px solid var(--line)}
+.module-empty>span{color:var(--lime);font-size:22px;margin-bottom:12px}
+.module-empty strong{color:#dce5da;font-size:11px}
+.module-empty p{color:var(--muted);font-size:10px;margin:6px 0 0}
+.module-privacy{color:var(--muted);font-size:9px;margin:15px 2px 0}
+.module-date-control{display:flex;align-items:center;gap:12px;margin:-8px 0 14px}
+.module-date-control label{color:var(--muted);font:9px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:1px}
+.module-date-control input{width:auto;padding:8px 10px}
+.nutrition-summary{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:10px;margin-bottom:14px}
+.nutrition-summary>article{min-width:0}
+.nutrition-summary>article>strong{display:block;color:#edf1e9;font:600 22px Manrope,ui-sans-serif,sans-serif;margin:12px 0 4px}
+.nutrition-summary>article>strong small{font:10px ui-sans-serif,system-ui,sans-serif;color:var(--muted)}
+.nutrition-calories p{color:var(--muted);font-size:9px;margin:5px 0 0}
+.macro-track{height:4px;border-radius:5px;background:#293a2d;overflow:hidden;margin-top:12px}
+.macro-track i{display:block;height:100%;border-radius:5px;background:var(--lime)}
+.macro-track.carbs i{background:var(--neon-blue,#62f3ff)}
+.macro-track.fat i{background:var(--neon-pink,#ff4fd8)}
+.progress-highlight{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;background:linear-gradient(110deg,var(--panel),var(--panel2))}
+.progress-highlight strong{display:block;color:#edf1e9;font:600 32px Manrope,ui-sans-serif,sans-serif;margin:8px 0 2px}
+.progress-highlight strong small{font-size:12px;color:var(--muted)}
+.progress-highlight p{margin:0;color:var(--muted);font-size:10px}
+.progress-mark{font-size:34px;color:var(--lime);opacity:.8;padding:0 12px}
+.progress-entry-date{width:88px;flex:0 0 auto;color:var(--muted);font:9px ui-monospace,SFMono-Regular,Menlo,monospace}
+.progress-entry-main{flex:1;min-width:0}
+@media(max-width:900px){.nutrition-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.module-columns{grid-template-columns:1fr}}
+@media(max-width:650px){.module-page{padding-top:4px}.module-heading{margin-bottom:20px}.module-stat-grid{gap:7px}.module-stat{padding:12px 10px}.module-stat>span{font-size:7px}.module-stat strong{font-size:21px}.module-stat small{font-size:8px}.module-panel{padding:15px 12px}.module-input-row{gap:7px}.module-input-row label{font-size:9px}.module-input-row input{padding:10px 7px}.nutrition-summary{gap:7px}.nutrition-summary>article{padding:13px}.nutrition-summary>article>strong{font-size:19px}.progress-entry-date{width:72px;font-size:8px}}
