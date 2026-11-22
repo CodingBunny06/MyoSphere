@@ -256,3 +256,13 @@ body{background:var(--bg);color:var(--white)}
   .muscle-selector{grid-template-columns:repeat(2,1fr)}
 }
 @media(prefers-reduced-motion:reduce){.quote-track{animation:none}}
+
+
+/* Detailed anatomy asset loading states */
+.studio-model-card{position:relative;overflow:hidden}
+.studio-load-overlay{position:absolute;inset:48px 0 38px;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(ellipse at center,rgba(15,27,31,.84),rgba(5,10,13,.94));pointer-events:none}
+.studio-load-overlay strong{color:#edf1e9;font-size:13px;font-weight:650}
+.studio-load-overlay p{max-width:330px;color:#a5b2a7;font-size:10px;line-height:1.65;margin:9px 0 0}
+.studio-asset-credit{margin:16px 0 0;color:var(--muted);font-size:8px;line-height:1.6}
+.studio-canvas canvas{cursor:grab}
+.studio-canvas canvas:active{cursor:grabbing}
