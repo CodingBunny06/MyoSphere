@@ -77,10 +77,10 @@ export default function AnatomyStudio() {
         const keyName = obj.name;
         const info = ANATOMY_BY_KEY[keyName as keyof typeof ANATOMY_BY_KEY];
         obj.userData.structureKey = keyName;
-        obj.userData.system = obj.parent?.name as System;
+        let systemNode: THREE.Object3D | null = obj.parent;\n        while (systemNode && !systems.includes(systemNode.name as System)) systemNode = systemNode.parent;\n        obj.userData.system = systemNode?.name as System | undefined;
         obj.userData.baseMaterial = (Array.isArray(obj.material) ? obj.material[0] : obj.material).clone();
         if (info?.system === "muscles") {
-          const color = categoryColor(info.category || info.label);
+          const color = categoryColor(info.key);
           const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
           obj.material = mats.map((mat) => {
             const clone = mat.clone() as THREE.MeshStandardMaterial;
