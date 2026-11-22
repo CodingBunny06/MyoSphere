@@ -4,7 +4,16 @@ import { foodReferences, type FoodReference } from "./foodReferences";
 type MealEntry = { id:string; date:string; meal?:string; food:string; grams:number; calories:number; protein:number; carbs:number; fat:number; fibre:number; source:string; sourceUrl:string; note?:string };
 const STORE="myosphere-nutrition-v2";
 const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
-function readMeals():MealEntry[]{try{return JSON.parse(localStorage.getItem(STORE)??"[]") as MealEntry[]}catch{return[]}}
+function readMeals():MealEntry[]{
+ try{
+  const current=localStorage.getItem(STORE);
+  if(current)return JSON.parse(current) as MealEntry[];
+  const legacy=JSON.parse(localStorage.getItem("myosphere-nutrition-v1")??"[]") as Array<{id:string;date:string;food:string;calories:number;protein:number;carbs:number;fat:number}>;
+  const migrated=legacy.map(item=>({...item,meal:"Meal",grams:0,fibre:0,source:"Legacy manual entry",sourceUrl:"",note:"Original manually entered values preserved; serving weight and source were not recorded."}));
+  if(migrated.length)localStorage.setItem(STORE,JSON.stringify(migrated));
+  return migrated;
+ }catch{return[]}
+}
 function rounded(value:number,digits=1){return Number(value.toFixed(digits))}
 function FoodCard({food,onSelect}:{food:FoodReference;onSelect:(food:FoodReference)=>void}){
  return <article className="food-reference-card"><div><span>{food.category.toUpperCase()} · {food.state.toUpperCase()}</span><strong>{food.name}</strong><small>{food.kcal} kcal · P {food.protein}g · C {food.carbs}g · F {food.fat}g per 100g</small></div><button type="button" onClick={()=>onSelect(food)}>Add ↗</button></article>;
