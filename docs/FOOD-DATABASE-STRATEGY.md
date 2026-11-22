@@ -80,3 +80,7 @@ Search results must not imply that every result is equally reliable. Rank exact 
 - Open Food Facts API and licence guidance: https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/
 - Open Food Facts product API: https://openfoodfacts.github.io/openfoodfacts-server/api/
 - ICMR-NIN Indian Food Composition Tables 2017: https://www.nin.res.in/ebooks/IFCT2017.pdf
+
+## Implementation status
+
+The first source-aware normalization layer now exists in `src/modules/foodDataModel.ts`, with its contract documented in [Food Data Model](FOOD-DATA-MODEL.md). It preserves source-qualified FDC IDs, source data type, publication date, retrieval timestamp, nutrient IDs and unknown values. It distinguishes analytical, reference-derived and label-derived records, and refuses to scale records unless their nutrient basis is explicitly per 100 g. This is importer infrastructure only: no new USDA catalogue batch has been imported, and the existing starter foods remain provisional.
