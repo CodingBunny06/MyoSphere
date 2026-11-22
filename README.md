@@ -88,3 +88,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or pull request.
 MyoSphere is licensed under the **GNU Affero General Public License v3.0**. See [LICENSE](LICENSE).
 
 Third-party assets and datasets may have separate licences and conditions.
+
+
+### Progress photo journal
+
+The Progress Hub supports a browser-local photo timeline with front/side/back/custom labels, dates, notes, deletion, and side-by-side comparison. Images are re-encoded in the browser and stored as blobs in IndexedDB; they are not uploaded to a server. Browser site-data clearing removes them. This is local browser storage, not app-level encryption or a secure backup. The feature is an early prototype; users should keep device encryption enabled and avoid using shared browser profiles for sensitive photos.
