@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import "./workspace-modules.css";
+import ProgressPhotoJournal from "./ProgressPhotoJournal";
 
 type TrainingEntry = { id: string; date: string; exercise: string; sets: number; reps: number; load: number };
 type FoodEntry = { id: string; date: string; food: string; calories: number; protein: number; carbs: number; fat: number };
@@ -200,6 +201,7 @@ export function ProgressPage() {
   return <section className="module-page">
     <PageHeading eyebrow="MYOSPHERE / PROGRESS JOURNAL" title={<>Progress, <em>not perfection.</em></>} description="Create dated check-ins, keep notes and see how your measurements change over time." />
     <div className="progress-highlight"><div><span className="eyebrow">LATEST WEIGHT CHECK-IN</span><strong>{latest ? <>{latest.weight} <small>kg</small></> : "—"}</strong><p>{latest ? latest.date : "Your first check-in is waiting"}</p></div><span className="progress-mark">◷</span></div>
+    <ProgressPhotoJournal />
     <div className="module-columns">
       <form className="module-panel module-form" onSubmit={addEntry}>
         <div className="module-panel-title"><div><span className="eyebrow">NEW CHECK-IN</span><h2>Record progress</h2></div><span className="module-plus">＋</span></div>
