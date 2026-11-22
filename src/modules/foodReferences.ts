@@ -10,14 +10,16 @@ export type FoodReference = {
   fibre: number;
   source: "USDA FoodData Central";
   sourceUrl: string;
+  verification: "provisional";
   note?: string;
 };
 
 // Generic, unbranded reference foods. Values are per 100 g edible portion.
-// These are reference matches, not substitutes for a product label or a weighed recipe.
+// These are provisional generic matches. Record-level FDC IDs and nutrient-by-nutrient verification are still pending.
+// Do not present these values as laboratory-accurate or as verified matches for every food variant.
 const USDA = "https://fdc.nal.usda.gov/food-search/";
 export const foodReferences: FoodReference[] = [
-  { id:"rice-white-cooked", name:"White rice, long-grain", category:"Grains", state:"Cooked", kcal:130, protein:2.69, carbs:28.17, fat:0.28, fibre:0.4, source:"USDA FoodData Central", sourceUrl:USDA+"?query=white+rice+cooked", note:"Cooked, plain; water absorption changes weight." },
+  { id:"rice-white-cooked", name:"White rice, long-grain", category:"Grains", state:"Cooked", kcal:130, protein:2.69, carbs:28.17, fat:0.28, fibre:0.4, source:"USDA FoodData Central", verification:"provisional", sourceUrl:USDA+"?query=white+rice+cooked", note:"Cooked, plain; water absorption changes weight." },
   { id:"rice-white-raw", name:"White rice, long-grain", category:"Grains", state:"Raw", kcal:365, protein:7.13, carbs:79.95, fat:0.66, fibre:1.3, source:"USDA FoodData Central", sourceUrl:USDA+"?query=white+rice+raw", note:"Dry uncooked grain." },
   { id:"oats-dry", name:"Oats, rolled, dry", category:"Grains", state:"Raw", kcal:379, protein:13.15, carbs:67.7, fat:6.52, fibre:10.1, source:"USDA FoodData Central", sourceUrl:USDA+"?query=rolled+oats+dry" },
   { id:"whole-wheat-flour", name:"Whole-wheat flour", category:"Grains", state:"Raw", kcal:340, protein:13.2, carbs:72.0, fat:2.5, fibre:10.7, source:"USDA FoodData Central", sourceUrl:USDA+"?query=whole+wheat+flour" },
