@@ -25,7 +25,7 @@ Energy uses the kcal field when present. The kJ fallback divides by 4.184. Do no
 
 - Foundation Foods and SR Legacy records are tagged `analytical` and use a per-100 g basis.
 - FNDDS and other non-branded survey/reference records are tagged `reference-derived`; the current normalizer retains their per-100 g nutrient basis.
-- Branded Foods are tagged `label-derived` and retained on a per-serving basis. They must not be scaled as if they were per 100 g.
+- Branded Foods are tagged `label-derived`; the FDC nutrient amounts are standardized to a per-100 g basis. The serving-size metadata is retained separately and can support a serving display.
 - Missing nutrient values remain `null`. They must never be silently converted to zero.
 - Scaling is allowed only for records explicitly marked `per-100g`. The helper returns `null` for unknown or per-serving bases until serving-size conversion is deliberately implemented.
 
@@ -35,7 +35,7 @@ The data type classification is intentionally conservative. Before publishing a 
 
 - The module normalizes a supplied FDC food-detail payload; it does not call the USDA API, download datasets, or import a catalogue.
 - It does not infer a match from a food name.
-- It does not normalize serving sizes for Branded Foods yet.
+- It does not yet calculate a branded product's label serving amount from its serving-size metadata; nutrient values themselves remain per 100 g.
 - It does not combine recipe ingredients or estimate cooked yields.
 - Alternate names, Indian language names, cuisine tags and portions remain future catalogue metadata.
 - Existing 19 starter foods remain provisional until matched to exact FDC records and checked nutrient-by-nutrient.
