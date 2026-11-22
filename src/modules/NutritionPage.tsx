@@ -29,6 +29,12 @@ export function NutritionPage(){
  const [grams,setGrams]=useState("100");
  const [meal,setMeal]=useState("Meal");
  const [notice,setNotice]=useState("");
+ const [barcode,setBarcode]=useState("");
+ const [barcodeProduct,setBarcodeProduct]=useState<OpenFoodProduct|null>(null);
+ const [barcodeLoading,setBarcodeLoading]=useState(false);
+ const [barcodeError,setBarcodeError]=useState("");
+ const [scannerOpen,setScannerOpen]=useState(false);
+ const [favourites,setFavourites]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem("myosphere-food-favourites")??"[]") as string[]}catch{return[]}});
  const [customName,setCustomName]=useState("");
  const [customKcal,setCustomKcal]=useState("");
  const [customProtein,setCustomProtein]=useState("");
