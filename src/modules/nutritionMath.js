@@ -21,8 +21,9 @@ export function sumEntriesForDate(entries, date) {
       carbs: sum.carbs + entry.carbs,
       fat: sum.fat + entry.fat,
       fibre: sum.fibre + (entry.fibre ?? 0),
+      fibreUnknown: sum.fibreUnknown + (entry.fibre == null ? 1 : 0),
     }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, fibreUnknown: 0 },
   );
 }
 
@@ -38,7 +39,7 @@ export function migrateLegacyEntries(entries) {
     ...item,
     meal: "Meal",
     grams: 0,
-    fibre: 0,
+    fibre: null,
     source: "Legacy manual entry",
     sourceUrl: "",
     note: "Original manually entered values preserved; serving weight and source were not recorded.",
