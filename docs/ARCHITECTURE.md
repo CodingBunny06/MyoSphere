@@ -25,6 +25,20 @@ Local-first, single-user, self-hosted application.
 - Tests: Vitest + Playwright.
 - Mobile packaging: evaluate Capacitor after the web experience is stable.
 
+## Progress photo storage
+
+- Store photo files in a dedicated local data directory outside the repository.
+- Store only generated opaque file identifiers and metadata in SQLite.
+- Validate file type and size; never trust uploaded filenames or paths.
+- Keep photos inaccessible from network interfaces in the initial local-only deployment.
+- Do not upload photos to cloud, analytics, or AI providers.
+- Include export and deletion workflows before a stable release.
+- Document that local files are not encrypted by SQLite and recommend full-disk encryption plus encrypted backups.
+
+## Interface direction
+
+Use original MyoSphere design, navigation, typography, colour tokens, and components. Borrow only general usability conventions from fitness products (for example, clear workout flows and progress timelines); do not reproduce another project's branding, exact screens, assets, or proprietary content.
+
 ## Boundaries
 
 - Frontend communicates with the API; browser code does not access the database directly.
