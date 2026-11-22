@@ -74,11 +74,8 @@ export default function AnatomyStudio() {
       // The model is organised as root-level system groups, then structure
       // nodes (catalog keys), then one or more render meshes. A render mesh's
       // own name is not guaranteed to be the catalog key.
-      const systemGroups = new Map<System, THREE.Object3D>();
-      root.children.forEach((child) => {
-        if (systems.includes(child.name as System)) systemGroups.set(child.name as System, child);
-      });
-      for (const [system, group] of systemGroups) group.visible = visible[system];
+      // Keep parent system groups enabled; visibility is controlled per mesh
+      // below so toggling a layer remains responsive after the model loads.
 
       root.traverse((obj) => {
         if (!(obj instanceof THREE.Mesh)) return;
