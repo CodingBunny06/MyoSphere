@@ -30,7 +30,7 @@ const navIcons: Record<Section, string> = {
 };
 
 function App() {
-  const [active, setActive] = useState<Section>("Overview");
+  const [active, setActive] = useState<Section>("Home");
   const [showProfile, setShowProfile] = useState(false);
   const [overviewMetrics, setOverviewMetrics] = useState({ workouts: 0, calories: 0, checkIns: 0 });
   const [theme, setTheme] = useState<Theme>(() => {
@@ -43,7 +43,7 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    if (active !== "Overview") return;
+    if (active !== "Home") return;
     const now = new Date();
     const monday = new Date(now);
     monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
