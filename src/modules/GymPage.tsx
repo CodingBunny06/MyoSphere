@@ -99,7 +99,7 @@ export default function GymPage() {
   const displayVolume = displayLoad(totalVolume);
   const bestLoads = useMemo(() => {
     const best = new Map<string, number>();
-    sessions.forEach((session) => session.exercises.forEach((item) => item.sets.forEach((set) => best.set(item.name, Math.max(best.get(item.name) ?? 0, set.load))));
+    sessions.forEach((session) => session.exercises.forEach((item) => item.sets.forEach((set) => best.set(item.name, Math.max(best.get(item.name) ?? 0, set.load)))));
     return [...best.entries()].sort((a, b) => b[1] - a[1]);
   }, [sessions]);
   const currentPlan = plan.find((item) => item.day === activeDay) ?? defaultPlan[0];
