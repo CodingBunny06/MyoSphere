@@ -269,3 +269,7 @@ body{background:var(--bg);color:var(--white)}
 
 .metric-link{width:100%;border-left:0;border-right:0;border-bottom:0;background:transparent;text-align:left;cursor:pointer;font-family:inherit}
 .metric-link:hover{color:var(--lime)}
+
+/* Mobile-first four-destination navigation and Home dashboard */
+@media(max-width:650px){.mobile-nav{grid-template-columns:repeat(4,minmax(0,1fr));padding-left:12px;padding-right:12px}.mobile-nav-item{min-height:43px;gap:5px}.mobile-nav-item span{font-size:20px}.mobile-nav-item small{font-size:9px;letter-spacing:.15px}.page-content{padding-top:22px}.quote-marquee{margin-bottom:18px}.welcome-row h1{font-size:30px}.hero-card{min-height:214px}.anatomy-card{min-height:188px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric-card{min-height:132px;padding:12px 12px 0}.metric-card>strong{font-size:22px}.metric-card>p{font-size:9px}.metric-foot{font-size:8px}.lower-grid{margin-top:9px}}
+@media(min-width:651px){.mobile-nav{grid-template-columns:repeat(4,minmax(0,1fr))}}
