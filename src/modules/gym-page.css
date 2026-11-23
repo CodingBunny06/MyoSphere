@@ -84,3 +84,50 @@
 .gym-disclaimer{margin:0;color:var(--muted);font-size:9px;line-height:1.6}
 @media(max-width:760px){.gym-day-picker{grid-template-columns:repeat(4,minmax(0,1fr))}.gym-exercise-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.gym-page{padding:4px 0 35px}.gym-heading{align-items:flex-start;flex-direction:column;margin-bottom:16px}.gym-heading h1{font-size:31px}.gym-unit{align-self:flex-start}.gym-tabs{margin:0 -4px 12px;padding:4px}.gym-tabs button{padding:10px 12px;font-size:9px}.gym-welcome{min-height:174px;padding:19px 17px}.gym-welcome-mark{width:74px;height:74px;font-size:30px;flex:0 0 auto}.gym-welcome-mark span{margin:43px 0 0 47px}.gym-kpis{gap:7px}.gym-kpis article{padding:12px 10px;gap:6px}.gym-kpis strong{font-size:21px}.gym-kpis small{font-size:8px;line-height:1.4}.gym-two-col,.gym-log-layout{grid-template-columns:1fr}.gym-panel{padding:15px}.gym-day-picker{grid-template-columns:repeat(2,minmax(0,1fr))}.gym-day-picker button{padding:10px}.gym-exercise-grid{gap:7px}.gym-exercise-card{padding:11px}.gym-session-toolbar{align-items:flex-start;flex-direction:column}.gym-set-row{grid-template-columns:42px 1fr auto;font-size:8px}}
+
+
+/* Gym hub redesign — information hierarchy, restrained surfaces, strong session focus */
+.gym-page{max-width:1180px;padding:4px 0 52px}
+.gym-heading{align-items:center;margin-bottom:19px}
+.gym-heading h1{font-size:clamp(28px,3vw,36px);letter-spacing:-1.1px}
+.gym-tabs{position:sticky;top:0;z-index:3;gap:3px;padding:4px;margin:0 0 17px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:var(--bg)}
+.gym-tabs button{padding:12px 16px;border-radius:5px;font-size:11px}
+.gym-tabs button.active{background:var(--panel2);border-color:transparent;color:var(--lime)}
+.gym-content{gap:13px}
+.gym-welcome{min-height:180px;padding:24px 26px;border-radius:8px}
+.gym-welcome h2{font-size:clamp(24px,3vw,30px)}
+.gym-welcome-mark{width:96px;height:96px;border-radius:50%;font-size:40px}
+.gym-kpis{gap:8px}
+.gym-kpis article{padding:15px 17px;border-radius:7px}
+.gym-kpis strong{font-size:25px}
+.gym-panel{padding:18px 19px;border-radius:8px}
+.gym-panel-title h3,.gym-panel h3{font-size:17px;letter-spacing:-.25px}
+.gym-today-plan{border:0;border-left:3px solid var(--lime);border-radius:0;padding:12px 14px;background:var(--panel2)}
+.gym-list-row,.gym-history-row{font-size:11px;padding:12px 0}
+.gym-primary,.gym-secondary,.gym-finish{min-height:40px;padding:10px 15px;border-radius:5px;font-size:11px}
+.gym-day-picker button{padding:12px 10px;border-radius:7px;transition:border-color .15s,background .15s}
+.gym-day-picker button.active{border-color:var(--lime);background:var(--panel2)}
+.gym-plan-editor{gap:14px}
+.gym-plan-editor input,.gym-plan-editor select,.gym-set-form input,.gym-set-form select,.gym-start-card input,.gym-search{min-height:42px;border-radius:5px;font-size:12px}
+.gym-session-toolbar{border-left:3px solid var(--lime)}
+.gym-set-form,.gym-live-log{padding:20px}
+.gym-set-row{padding:11px 0;border-bottom:1px solid var(--line);font-size:10px}
+.gym-exercise-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.gym-exercise-card{padding:15px;border-radius:7px;transition:border-color .15s,background .15s}
+.gym-exercise-card:hover{border-color:var(--lime);background:var(--panel2)}
+.gym-exercise-card strong{font-size:12px}
+.gym-disclaimer{padding-top:3px}
+@media(max-width:650px){
+ .gym-heading{gap:10px}
+ .gym-heading h1{font-size:29px}
+ .gym-tabs{margin:0 -2px 12px;top:0}
+ .gym-tabs button{flex:0 0 auto;padding:11px 13px;font-size:10px}
+ .gym-welcome{min-height:158px;padding:17px}
+ .gym-welcome-mark{width:66px;height:66px;font-size:27px}
+ .gym-kpis article{padding:12px 10px}
+ .gym-kpis strong{font-size:20px}
+ .gym-panel{padding:14px}
+ .gym-exercise-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .gym-day-picker{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .gym-set-row{grid-template-columns:42px 1fr auto;gap:5px;font-size:9px}
+}
