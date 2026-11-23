@@ -15,7 +15,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "three": "^0.187.0",
-    "@zxing/browser": "^0.1.5",
+    "@zxing/browser": "^0.2.1",
     "open-anatomy-3d": "^0.1.0"
   },
   "devDependencies": {
