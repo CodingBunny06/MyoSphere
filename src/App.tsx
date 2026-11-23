@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import AnatomyStudio from "./components/AnatomyStudio";
-import { NutritionPage, ProgressPage, TrainingPage } from "./modules/WorkspaceModules";
+import GymPage from "./modules/GymPage";
+import { NutritionPage, ProgressPage } from "./modules/WorkspaceModules";
 
 type Section = "Home" | "Gym" | "Nutrition" | "Progress" | "Body" | "Settings";
 type Theme = "cyberpunk" | "matrix" | "synthwave" | "arctic" | "solar";
@@ -155,7 +156,7 @@ function App() {
               <footer className="page-footer"><span>MYOSPHERE · YOUR FITNESS, IN YOUR ORBIT</span><span>LOCAL-FIRST · PRIVATE BY DEFAULT</span></footer>
             </>
           ) : active === "Gym" ? (
-            <TrainingPage />
+            <GymPage />
           ) : active === "Nutrition" ? (
             <NutritionPage />
           ) : active === "Progress" ? (
