@@ -105,6 +105,15 @@ export default function GymPage() {
   const currentPlan = plan.find((item) => item.day === activeDay) ?? defaultPlan[0];
   const filteredExercises = exercises.filter((item) => (muscleFilter === "All" || item.muscle === muscleFilter) && item.name.toLowerCase().includes(query.toLowerCase()));
 
+  function changeUnit(nextUnit: "kg" | "lb") {
+    if (nextUnit === unit) return;
+    const currentLoad = Number(load);
+    if (Number.isFinite(currentLoad)) {
+      setLoad((nextUnit === "lb" ? currentLoad * 2.2046226218 : currentLoad / 2.2046226218).toFixed(1));
+    }
+    setUnit(nextUnit);
+  }
+
   function startSession(name?: string) {
     const planned = currentPlan;
     const label = name ?? (planned.focus && planned.focus !== "Rest" ? planned.focus : "Training session");
@@ -144,7 +153,7 @@ export default function GymPage() {
   return <section className="gym-page">
     <header className="gym-heading">
       <div><span className="gym-eyebrow">MYOSPHERE / TRAINING</span><h1>Build your <em>strength.</em></h1><p>Your training, organised around consistency and measurable progress.</p></div>
-      <div className="gym-unit"><span>LOAD UNIT</span><button className={unit === "kg" ? "selected" : ""} onClick={() => setUnit("kg")}>KG</button><button className={unit === "lb" ? "selected" : ""} onClick={() => setUnit("lb")}>LB</button></div>
+      <div className="gym-unit"><span>LOAD UNIT</span><button className={unit === "kg" ? "selected" : ""} onClick={() => changeUnit("kg")}>KG</button><button className={unit === "lb" ? "selected" : ""} onClick={() => changeUnit("lb")}>LB</button></div>
     </header>
     <nav className="gym-tabs" aria-label="Gym sections">{(["Overview", "Plan", "Start", "Stats", "Exercises"] as Tab[]).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{item}</button>)}</nav>
 
