@@ -290,3 +290,38 @@
  .gym-editor-set{grid-template-columns:32px repeat(2,minmax(0,1fr)) 25px;gap:6px}
 }
 @media(prefers-reduced-motion:reduce){.gym-primary,.gym-week-strip button{transition:none}}
+
+
+/* Plan builder: separate reusable routines from schedule configuration */
+.gym-plan-subnav{display:flex;gap:7px;padding:5px;border:1px solid var(--line);border-radius:11px;background:var(--panel);width:max-content;max-width:100%}
+.gym-plan-subnav button{display:flex;align-items:center;gap:8px;padding:10px 16px;border:0;border-radius:7px;background:transparent;color:var(--muted);font:600 11px inherit;cursor:pointer}
+.gym-plan-subnav button.active{background:var(--lime);color:#172016}
+.gym-plan-subnav small{font-size:9px;opacity:.75}
+.gym-plan-mode{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gym-plan-mode button{display:grid;gap:6px;text-align:left;padding:16px 18px;border:1px solid var(--line);border-radius:11px;background:var(--panel);color:var(--white);cursor:pointer}
+.gym-plan-mode button.active{border-color:var(--lime);background:var(--panel2);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lime) 20%,transparent)}
+.gym-plan-mode strong{font-size:13px}
+.gym-plan-mode small{font-size:10px;color:var(--muted)}
+.gym-routine-create{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px}
+.gym-routine-create input{min-width:0;min-height:43px;padding:10px 13px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--white);font:inherit;font-size:12px}
+.gym-routine-editor{display:grid;gap:13px;padding:17px;border:1px solid var(--lime);border-radius:10px;background:var(--panel2)}
+.gym-routine-editor>label{display:grid;gap:6px;color:var(--muted);font-size:10px}
+.gym-routine-editor input,.gym-routine-editor select{width:100%;min-height:42px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--white);font:inherit;font-size:12px}
+.gym-routine-list{display:grid;gap:8px}
+.gym-routine-card{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.gym-routine-card>div:first-child{display:grid;gap:6px;min-width:0}
+.gym-routine-card>div:first-child strong{font-size:13px}
+.gym-routine-card>div:first-child small{color:var(--muted);font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.gym-routine-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.gym-routine-actions button:disabled{opacity:.3;cursor:not-allowed}
+.gym-rotation-preview{display:grid;gap:6px;padding:17px;border-left:3px solid var(--lime);border-radius:0 9px 9px 0;background:var(--panel2)}
+.gym-rotation-preview strong{font-size:20px}
+.gym-rotation-preview small{color:var(--muted);font-size:10px}
+@media(max-width:650px){
+ .gym-plan-mode{grid-template-columns:1fr}
+ .gym-routine-create{grid-template-columns:1fr}
+ .gym-routine-card{align-items:flex-start;flex-direction:column}
+ .gym-routine-actions{flex-wrap:wrap}
+ .gym-plan-subnav{width:100%}
+ .gym-plan-subnav button{flex:1;justify-content:center;padding:10px}
+}
