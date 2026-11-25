@@ -15,6 +15,7 @@ type SetRecord = TrainingSet;
 type WorkoutSession = TrainingSession;
 type PlanDay = { day: string; focus: string; exercises: string[] };
 type RoutineTemplate = { id: string; name: string; exercises: string[] };
+type PlanMode = "weekly" | "rotation";
 type Tab = "Overview" | "Plan" | "Start" | "Stats" | "Exercises";
 
 const STORAGE_KEY = "myosphere-gym-sessions-v1";
@@ -22,6 +23,8 @@ const PLAN_KEY = "myosphere-gym-plan-v1";
 const ACTIVE_KEY = "myosphere-gym-active-session-v1";
 const UNIT_KEY = "myosphere-gym-unit-v1";
 const TEMPLATES_KEY = "myosphere-gym-templates-v1";
+const PLAN_MODE_KEY = "myosphere-gym-plan-mode-v1";
+const ROTATION_START_KEY = "myosphere-gym-rotation-start-v1";
 const LB_PER_KG = 2.2046226218;
 
 const exercises: Exercise[] = [
@@ -136,6 +139,12 @@ export default function GymPage() {
   const [sessions, setSessions] = useState<WorkoutSession[]>(loadInitialSessions);
   const [plan, setPlan] = useState<PlanDay[]>(() => readStore(PLAN_KEY, defaultPlan));
   const [templates, setTemplates] = useState<RoutineTemplate[]>(() => readStore<RoutineTemplate[]>(TEMPLATES_KEY, []));
+  const [planMode, setPlanMode] = useState<PlanMode>(() => readStore<PlanMode>(PLAN_MODE_KEY, "weekly"));
+  const [rotationStartDate, setRotationStartDate] = useState(() => readStore<string>(ROTATION_START_KEY, today()));
+  const [planView, setPlanView] = useState<"schedule" | "routines">("schedule");
+  const [newRoutineName, setNewRoutineName] = useState("");
+  const [editingRoutineId, setEditingRoutineId] = useState<string | null>(null);
+  const [routineDraft, setRoutineDraft] = useState<RoutineTemplate | null>(null);
   const [activeDay, setActiveDay] = useState(days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
   const [activeSession, setActiveSession] = useState<WorkoutSession | null>(() => readStore<WorkoutSession | null>(ACTIVE_KEY, null));
   const [sessionName, setSessionName] = useState("");
@@ -155,6 +164,8 @@ export default function GymPage() {
   useEffect(() => saveStore(STORAGE_KEY, sessions), [sessions]);
   useEffect(() => saveStore(PLAN_KEY, plan), [plan]);
   useEffect(() => saveStore(TEMPLATES_KEY, templates), [templates]);
+  useEffect(() => saveStore(PLAN_MODE_KEY, planMode), [planMode]);
+  useEffect(() => saveStore(ROTATION_START_KEY, rotationStartDate), [rotationStartDate]);
   useEffect(() => saveStore(UNIT_KEY, unit), [unit]);
   useEffect(() => {
     if (activeSession) saveStore(ACTIVE_KEY, activeSession);
@@ -169,7 +180,11 @@ export default function GymPage() {
   const totalVolume = useMemo(() => sessions.reduce((sum, session) => sum + sessionVolume(session), 0), [sessions]);
   const records = useMemo(() => getPersonalRecords(sessions), [sessions]);
   const progression = useMemo(() => getExerciseProgression(sessions, progressExercise), [sessions, progressExercise]);
-  const currentPlan = plan.find((item) => item.day === activeDay) ?? defaultPlan[0];
+  const rotationDays = Math.max(0, Math.floor((Date.parse(today() + "T00:00:00Z") - Date.parse(rotationStartDate + "T00:00:00Z")) / 86400000));
+  const rotationRoutine = templates.length ? templates[rotationDays % templates.length] : null;
+  const currentPlan: PlanDay = planMode === "rotation" && rotationRoutine
+    ? { day: activeDay, focus: rotationRoutine.name, exercises: rotationRoutine.exercises }
+    : plan.find((item) => item.day === activeDay) ?? defaultPlan[0];
   const filteredExercises = exercises.filter((item) => (muscleFilter === "All" || item.muscle === muscleFilter) && item.name.toLowerCase().includes(query.toLowerCase()));
   const lastSession = sessions[0];
 
@@ -251,6 +266,29 @@ export default function GymPage() {
   function applyTemplate(template: RoutineTemplate) {
     setPlan((current) => current.map((item) => item.day === activeDay ? { ...item, focus: template.name, exercises: [...template.exercises] } : item));
   }
+  function createRoutine() {
+    const name = newRoutineName.trim();
+    if (!name) return;
+    const routine = { id: makeId(), name, exercises: [] as string[] };
+    setTemplates((current) => [...current, routine]);
+    setRoutineDraft(routine); setEditingRoutineId(routine.id); setNewRoutineName(""); setPlanView("routines");
+  }
+  function updateRoutineDraft(patch: Partial<RoutineTemplate>) { setRoutineDraft((current) => current ? { ...current, ...patch } : current); }
+  function saveRoutineDraft() {
+    if (!routineDraft || !routineDraft.name.trim()) return;
+    setTemplates((current) => current.some((item) => item.id === routineDraft.id)
+      ? current.map((item) => item.id === routineDraft.id ? { ...routineDraft, name: routineDraft.name.trim() } : item)
+      : [...current, { ...routineDraft, name: routineDraft.name.trim() }]);
+    setRoutineDraft(null); setEditingRoutineId(null);
+  }
+  function deleteRoutine(id: string) {
+    if (!window.confirm("Delete this routine? Existing weekly assignments and workout history will remain unchanged.")) return;
+    setTemplates((current) => current.filter((item) => item.id !== id));
+    if (editingRoutineId === id) { setEditingRoutineId(null); setRoutineDraft(null); }
+  }
+  function moveRoutine(index: number, direction: -1 | 1) {
+    setTemplates((current) => { const next = [...current]; const target = index + direction; if (target < 0 || target >= next.length) return current; [next[index], next[target]] = [next[target], next[index]]; return next; });
+  }
   function openSessionEditor(session: WorkoutSession) {
     setEditingSessionId(session.id);
     setSessionDraft(JSON.parse(JSON.stringify(session)) as WorkoutSession);
@@ -328,22 +366,55 @@ export default function GymPage() {
     </div>}
 
     {tab === "Plan" && <div className="gym-content">
-      <div className="gym-section-intro"><span className="gym-eyebrow">PLAN YOUR WEEK</span><h2>Your weekly <em>routine.</em></h2><p>Pick a day to shape its session. Your changes and saved routines stay on this device.</p></div>
-      <div className="gym-day-picker">{plan.map((item) => <button key={item.day} className={activeDay === item.day ? "active" : ""} onClick={() => setActiveDay(item.day)}><span>{item.day.slice(0, 3).toUpperCase()}</span><strong>{item.focus || "Unset"}</strong><small>{item.exercises.length} exercises</small></button>)}</div>
-      <section className="gym-panel gym-plan-editor">
-        <label>Session focus<input value={currentPlan.focus} onChange={(event) => updatePlanFocus(event.target.value)} placeholder="e.g. Push, Pull, Legs, Rest" maxLength={40}/></label>
-        <div className="gym-panel-title"><div><span className="gym-eyebrow">{activeDay.toUpperCase()}</span><h3>Planned exercises</h3></div><span className="gym-count">{currentPlan.exercises.length} movements</span></div>
-        {currentPlan.exercises.map((name) => <div className="gym-list-row" key={name}>{name}<button onClick={() => removePlanExercise(name)} aria-label={`Remove ${name}`}>×</button></div>)}
-        <label>Add a movement<select value={selectedExercise} onChange={(event) => setSelectedExercise(event.target.value)}>{exercises.map((item) => <option key={item.name}>{item.name}</option>)}</select></label>
-        <button className="gym-secondary" onClick={() => addPlanExercise(selectedExercise)}>＋ Add to {activeDay}</button>
-        <div className="gym-template-tools">
-          <label>Save this day as a routine<input value={templateName} onChange={(event) => setTemplateName(event.target.value)} placeholder={currentPlan.focus || "Routine name"}/></label>
-          <button className="gym-secondary" onClick={saveTemplate} disabled={!currentPlan.exercises.length}>Save routine template</button>
-          <button className="gym-secondary" onClick={copyLastWorkoutToPlan} disabled={!lastSession}>Copy last completed workout here</button>
+      <div className="gym-section-intro"><span className="gym-eyebrow">TRAINING PROGRAMME</span><h2>Build your <em>plan.</em></h2><p>Create reusable routines, then arrange them into a fixed weekly timetable or a rotating training cycle.</p></div>
+      <div className="gym-plan-subnav" role="tablist" aria-label="Plan tools">
+        <button className={planView === "schedule" ? "active" : ""} onClick={() => setPlanView("schedule")}>▦ Schedule</button>
+        <button className={planView === "routines" ? "active" : ""} onClick={() => setPlanView("routines")}>＋ Routines <small>{templates.length}</small></button>
+      </div>
+      {planView === "routines" && <section className="gym-panel gym-plan-editor">
+        <div className="gym-panel-title"><div><span className="gym-eyebrow">ROUTINE LIBRARY</span><h3>Create a workout routine</h3></div></div>
+        <div className="gym-routine-create"><input aria-label="New routine name" value={newRoutineName} onChange={(event) => setNewRoutineName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") createRoutine(); }} placeholder="e.g. Upper body, Push A, Full body"/><button className="gym-primary" onClick={createRoutine} disabled={!newRoutineName.trim()}>＋ Create routine</button></div>
+        {routineDraft && <div className="gym-routine-editor">
+          <div className="gym-panel-title"><div><span className="gym-eyebrow">EDITING ROUTINE</span><h3>{routineDraft.name || "New routine"}</h3></div><button className="gym-text-danger" onClick={() => { setRoutineDraft(null); setEditingRoutineId(null); }}>Cancel</button></div>
+          <label>Routine name<input value={routineDraft.name} onChange={(event) => updateRoutineDraft({ name: event.target.value })} maxLength={48}/></label>
+          <div className="gym-panel-title"><h3>Exercises</h3><span className="gym-count">{routineDraft.exercises.length} movements</span></div>
+          {routineDraft.exercises.map((name) => <div className="gym-list-row" key={name}>{name}<button onClick={() => updateRoutineDraft({ exercises: routineDraft.exercises.filter((item) => item !== name) })} aria-label={`Remove ${name}`}>×</button></div>)}
+          <label>Add exercise<select value={selectedExercise} onChange={(event) => setSelectedExercise(event.target.value)}>{exercises.map((item) => <option key={item.name}>{item.name}</option>)}</select></label>
+          <button className="gym-secondary" onClick={() => updateRoutineDraft({ exercises: routineDraft.exercises.includes(selectedExercise) ? routineDraft.exercises : [...routineDraft.exercises, selectedExercise] })}>＋ Add exercise</button>
+          <button className="gym-primary" onClick={saveRoutineDraft} disabled={!routineDraft.name.trim()}>Save routine</button>
+        </div>}
+        <div className="gym-routine-list">{templates.length ? templates.map((routine, index) => <article className="gym-routine-card" key={routine.id}>
+          <div><span className="gym-eyebrow">ROUTINE {String(index + 1).padStart(2, "0")}</span><strong>{routine.name}</strong><small>{routine.exercises.length} exercises · {routine.exercises.slice(0, 3).join(" · ")}{routine.exercises.length > 3 ? " …" : ""}</small></div>
+          <div className="gym-routine-actions"><button className="gym-icon-button" onClick={() => moveRoutine(index, -1)} disabled={index === 0} aria-label="Move routine up">↑</button><button className="gym-icon-button" onClick={() => moveRoutine(index, 1)} disabled={index === templates.length - 1} aria-label="Move routine down">↓</button><button className="gym-inline-link" onClick={() => { setRoutineDraft({ ...routine, exercises: [...routine.exercises] }); setEditingRoutineId(routine.id); }}>Edit</button><button className="gym-text-danger" onClick={() => deleteRoutine(routine.id)}>Delete</button></div>
+        </article>) : <div className="gym-empty"><strong>No routines created yet</strong><p>Create your first routine above, or save an existing weekly session as a routine.</p></div>}</div>
+        <div className="gym-template-tools"><label>Save selected day's workout as a routine<input value={templateName} onChange={(event) => setTemplateName(event.target.value)} placeholder={currentPlan.focus || "Routine name"}/></label><button className="gym-secondary" onClick={saveTemplate} disabled={!currentPlan.exercises.length}>Save current day</button></div>
+      </section>}
+      {planView === "schedule" && <>
+        <div className="gym-plan-mode">
+          <button className={planMode === "weekly" ? "active" : ""} onClick={() => setPlanMode("weekly")}><strong>Weekly schedule</strong><small>Assign a routine to each weekday</small></button>
+          <button className={planMode === "rotation" ? "active" : ""} onClick={() => setPlanMode("rotation")}><strong>Rotating cycle</strong><small>Repeat routines in sequence, day by day</small></button>
         </div>
-        {templates.length > 0 && <div className="gym-template-list"><span className="gym-eyebrow">SAVED ROUTINES</span>{templates.map((template) => <div className="gym-history-row" key={template.id}><div><strong>{template.name}</strong><small>{template.exercises.length} exercises</small></div><button className="gym-inline-link" onClick={() => applyTemplate(template)}>Apply to {activeDay} ↗</button></div>)}</div>}
-        <button className="gym-primary" onClick={() => startSession(currentPlan.focus, currentPlan.exercises)}>Start this workout ↗</button>
-      </section>
+        {planMode === "weekly" ? <>
+          <div className="gym-day-picker">{plan.map((item) => <button key={item.day} className={activeDay === item.day ? "active" : ""} onClick={() => setActiveDay(item.day)}><span>{item.day.slice(0, 3).toUpperCase()}</span><strong>{item.focus || "Unset"}</strong><small>{item.exercises.length ? `${item.exercises.length} exercises` : "Rest day"}</small></button>)}</div>
+          <section className="gym-panel gym-plan-editor">
+            <div className="gym-panel-title"><div><span className="gym-eyebrow">{activeDay.toUpperCase()}</span><h3>Schedule this day</h3></div><span className="gym-count">{currentPlan.exercises.length} movements</span></div>
+            <label>Assign a saved routine<select value={templates.find((item) => item.name === currentPlan.focus && item.exercises.join("|") === currentPlan.exercises.join("|"))?.id ?? ""} onChange={(event) => { const routine = templates.find((item) => item.id === event.target.value); if (routine) applyTemplate(routine); else if (event.target.value === "rest") setPlan((current) => current.map((item) => item.day === activeDay ? { ...item, focus: "Rest", exercises: [] } : item)); }}><option value="">Custom session (edit below)</option><option value="rest">Rest day</option>{templates.map((routine) => <option key={routine.id} value={routine.id}>{routine.name}</option>)}</select></label>
+            <label>Session name<input value={currentPlan.focus} onChange={(event) => updatePlanFocus(event.target.value)} placeholder="e.g. Push, Pull, Legs, Rest" maxLength={40}/></label>
+            <div className="gym-panel-title"><h3>Planned exercises</h3></div>
+            {currentPlan.exercises.map((name) => <div className="gym-list-row" key={name}>{name}<button onClick={() => removePlanExercise(name)} aria-label={`Remove ${name}`}>×</button></div>)}
+            <label>Add a movement<select value={selectedExercise} onChange={(event) => setSelectedExercise(event.target.value)}>{exercises.map((item) => <option key={item.name}>{item.name}</option>)}</select></label>
+            <button className="gym-secondary" onClick={() => addPlanExercise(selectedExercise)}>＋ Add movement</button>
+            <button className="gym-primary" onClick={() => startSession(currentPlan.focus, currentPlan.exercises)} disabled={!currentPlan.exercises.length}>Start this workout ↗</button>
+          </section>
+        </> : <section className="gym-panel gym-plan-editor">
+          <div className="gym-panel-title"><div><span className="gym-eyebrow">ROTATION SETTINGS</span><h3>Continuous training cycle</h3></div></div>
+          <p className="gym-chart-note">The cycle advances one routine per calendar day, including rest routines. It does not reset on Monday, so a 3-day or 5-day split keeps its sequence across weeks.</p>
+          <label>Cycle starts on<input type="date" value={rotationStartDate} onChange={(event) => setRotationStartDate(event.target.value)}/></label>
+          <div className="gym-rotation-preview"><span className="gym-eyebrow">TODAY'S ROTATION</span><strong>{rotationRoutine?.name ?? "No routines in cycle"}</strong><small>{rotationRoutine ? `${rotationRoutine.exercises.length} exercises · Day ${rotationDays + 1} of cycle` : "Create routines in the Routines tab and arrange their order."}</small></div>
+          <div className="gym-template-list"><span className="gym-eyebrow">CYCLE ORDER · USE ARROWS TO REORDER</span>{templates.map((routine, index) => <div className="gym-history-row" key={routine.id}><div><strong>{index + 1}. {routine.name}</strong><small>{routine.exercises.length} exercises</small></div><div className="gym-routine-actions"><button className="gym-icon-button" onClick={() => moveRoutine(index, -1)} disabled={index === 0} aria-label="Move routine up">↑</button><button className="gym-icon-button" onClick={() => moveRoutine(index, 1)} disabled={index === templates.length - 1} aria-label="Move routine down">↓</button></div></div>)}</div>
+          {!templates.length && <button className="gym-secondary" onClick={() => setPlanView("routines")}>Create routines ↗</button>}
+        </section>}
+      </>}
     </div>}
 
     {tab === "Start" && <div className="gym-content">
