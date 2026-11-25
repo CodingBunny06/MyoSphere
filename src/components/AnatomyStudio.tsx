@@ -40,6 +40,8 @@ export default function AnatomyStudio() {
   const [loadError, setLoadError] = useState("");
   const [progress, setProgress] = useState(0);
   const [fatPercent, setFatPercent] = useState(20);
+  const fatDisplacementRef = useRef(0);
+  const fatAnimationRef = useRef<number | null>(null);
   const [query, setQuery] = useState("");
 
   const selectedInfo = selectedKey ? ANATOMY_BY_KEY[selectedKey as keyof typeof ANATOMY_BY_KEY] : null;
@@ -134,6 +136,7 @@ export default function AnatomyStudio() {
         objectsRef.current.push(obj);
       });
       scene.add(root);
+      fatDisplacementRef.current = 0;
       camera.position.set(0, size.y * scale * 0.55, Math.max(2.8, size.y * scale * 1.7));
       controls.target.set(0, size.y * scale * 0.48, 0); controls.update();
       setLoading(false);
@@ -178,24 +181,57 @@ export default function AnatomyStudio() {
   }, [visible, selectedKey, loading]);
 
   useEffect(() => {
-    objectsRef.current.forEach((obj) => {
-      if (obj.userData.system !== "skin" || !(obj instanceof THREE.Mesh)) return;
-      const geometry = obj.geometry as THREE.BufferGeometry;
-      const position = geometry.getAttribute("position") as THREE.BufferAttribute;
-      const base = obj.userData.basePositions as Float32Array | undefined;
-      const normals = obj.userData.baseNormals as Float32Array | undefined;
-      if (!base || !normals) return;
-      // A restrained, reversible surface inflation for visual exploration only.
-      // It is not a validated mapping between body-fat percentage and anatomy.
-      const displacement = ((fatPercent - 20) / 25) * 0.012;
-      for (let i = 0; i < position.count; i++) {
-        const offset = i * 3;
-        position.setXYZ(i, base[offset] + normals[offset] * displacement, base[offset + 1] + normals[offset + 1] * displacement, base[offset + 2] + normals[offset + 2] * displacement);
+    if (loading) return;
+    const startDisplacement = fatDisplacementRef.current;
+    const targetDisplacement = ((fatPercent - 20) / 25) * 0.012;
+    const duration = 140;
+    let startedAt: number | null = null;
+
+    const applyDisplacement = (displacement: number) => {
+      objectsRef.current.forEach((obj) => {
+        if (obj.userData.system !== "skin" || !(obj instanceof THREE.Mesh)) return;
+        const geometry = obj.geometry as THREE.BufferGeometry;
+        const position = geometry.getAttribute("position") as THREE.BufferAttribute;
+        const base = obj.userData.basePositions as Float32Array | undefined;
+        const normals = obj.userData.baseNormals as Float32Array | undefined;
+        if (!base || !normals) return;
+        for (let i = 0; i < position.count; i++) {
+          const offset = i * 3;
+          position.setXYZ(
+            i,
+            base[offset] + normals[offset] * displacement,
+            base[offset + 1] + normals[offset + 1] * displacement,
+            base[offset + 2] + normals[offset + 2] * displacement
+          );
+        }
+        position.needsUpdate = true;
+        geometry.computeVertexNormals();
+        geometry.computeBoundingSphere();
+      });
+    };
+
+    if (fatAnimationRef.current !== null) cancelAnimationFrame(fatAnimationRef.current);
+    const animateFatPreview = (timestamp: number) => {
+      if (startedAt === null) startedAt = timestamp;
+      const progress = Math.min((timestamp - startedAt) / duration, 1);
+      const eased = progress * progress * (3 - 2 * progress);
+      const displacement = startDisplacement + (targetDisplacement - startDisplacement) * eased;
+      applyDisplacement(displacement);
+      fatDisplacementRef.current = displacement;
+      if (progress < 1) {
+        fatAnimationRef.current = requestAnimationFrame(animateFatPreview);
+      } else {
+        fatAnimationRef.current = null;
       }
-      position.needsUpdate = true;
-      geometry.computeVertexNormals();
-      geometry.computeBoundingSphere();
-    });
+    };
+
+    fatAnimationRef.current = requestAnimationFrame(animateFatPreview);
+    return () => {
+      if (fatAnimationRef.current !== null) {
+        cancelAnimationFrame(fatAnimationRef.current);
+        fatAnimationRef.current = null;
+      }
+    };
   }, [fatPercent, loading]);
 
   return <section className="anatomy-v2">
@@ -214,7 +250,7 @@ export default function AnatomyStudio() {
         <div className="anatomy-v2-section"><span className="eyebrow">BODY SYSTEMS</span>{systems.map((system) => <label key={system}><input type="checkbox" checked={visible[system]} onChange={(e) => setVisible((current) => ({ ...current, [system]: e.target.checked }))}/><span className={`anatomy-swatch anatomy-swatch-${system}`}/>{system[0].toUpperCase()+system.slice(1)}</label>)}</div>
         <div className="anatomy-v2-section"><span className="eyebrow">SELECTED STRUCTURE</span><strong>{selectedInfo?.label || "Select a structure"}</strong><small>{selectedInfo ? `${selectedInfo.system} · ${selectedInfo.category}` : "Click a visible structure in the model."}</small></div>
         <div className="anatomy-v2-section"><span className="eyebrow">MUSCLE SEARCH</span><input className="anatomy-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search muscles…"/><div className="anatomy-muscle-results">{filteredMuscles.slice(0, 12).map((item) => <button key={item.key} onClick={() => { setVisible((v) => ({ ...v, muscles: true })); setSelectedKey(item.key); }}>{item.label}</button>)}</div></div>
-        <div className="anatomy-v2-section"><span className="eyebrow">BODY-FAT REFERENCE</span><div className="fat-slider-heading"><strong>{fatPercent}%</strong><span>Adjust to your own reference</span></div><input className="anatomy-fat-slider" type="range" min="5" max="45" step="1" value={fatPercent} onChange={(event) => setFatPercent(Number(event.target.value))}/><div className="fat-slider-scale"><span>5%</span><span>45%</span></div><p className="anatomy-fat-copy">This gently changes the outer-surface preview to help visualise a range. Real fat distribution varies by person, sex, age and genetics; this is not a measurement or prediction.</p></div>
+        <div className="anatomy-v2-section"><span className="eyebrow">BODY-FAT REFERENCE</span><div className="fat-slider-heading"><strong>{fatPercent}%</strong><span>Adjust to your own reference</span></div><input className="anatomy-fat-slider" type="range" min="5" max="45" step="0.1" value={fatPercent} onChange={(event) => setFatPercent(Number(event.target.value))}/><div className="fat-slider-scale"><span>5%</span><span>45%</span></div><p className="anatomy-fat-copy">This gently changes the outer-surface preview to help visualise a range. Real fat distribution varies by person, sex, age and genetics; this is not a measurement or prediction.</p></div>
         <small className="anatomy-attribution">{ATTRIBUTION}</small>
       </aside>
     </div>
