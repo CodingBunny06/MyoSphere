@@ -1,2 +1,54 @@
 .anatomy-v2{max-width:1240px;margin:0 auto;padding:8px 0 44px}.anatomy-v2 .studio-heading{margin-bottom:20px}.anatomy-v2-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.anatomy-v2-toggle{display:flex;padding:4px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}.anatomy-v2-toggle button,.anatomy-fat{border:0;border-radius:6px;padding:9px 15px;background:transparent;color:var(--muted);font-size:10px}.anatomy-v2-toggle button.active,.anatomy-fat.active{background:var(--lime);color:#142016;font-weight:700}.anatomy-fat{border:1px solid var(--line)}.anatomy-v2-layout{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:12px;align-items:start}.anatomy-v2-viewer,.anatomy-v2-panel{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}.anatomy-v2-viewer{position:relative;min-height:650px;background:radial-gradient(ellipse at 50% 38%,#1b2b2c 0,#0c1415 60%,#080d10 100%)}.anatomy-v2-canvas{position:absolute;inset:0;min-height:650px}.anatomy-v2-loading,.anatomy-v2-error,.anatomy-fat-notice{position:absolute;left:14px;right:14px;bottom:14px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#08100ee8;color:#dce8dc;font-size:10px}.anatomy-v2-error{color:#ffb0a8}.anatomy-fat-notice{bottom:auto;top:12px;color:#ffd28b}.anatomy-v2-panel{padding:16px;display:grid;gap:18px}.anatomy-v2-section{display:grid;gap:9px}.anatomy-v2-section>strong{font-size:13px;color:#eef5ed}.anatomy-v2-section>small,.anatomy-fat-copy{font-size:9px;color:var(--muted);line-height:1.6}.anatomy-v2-section label{display:flex;align-items:center;gap:8px;color:#cbd6ca;font-size:10px}.anatomy-v2-section input[type=checkbox]{accent-color:var(--lime)}.anatomy-swatch{width:9px;height:9px;border-radius:3px;background:#8e9ba5}.anatomy-swatch-muscles{background:#ff8a59}.anatomy-swatch-skeleton{background:#e9dfc9}.anatomy-swatch-organs{background:#d77ba4}.anatomy-swatch-vessels{background:#5da9f5}.anatomy-swatch-nerves{background:#e9d35d}.anatomy-search{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:#fff;font-size:10px}.anatomy-muscle-results{display:grid;gap:3px;max-height:180px;overflow:auto}.anatomy-muscle-results button{text-align:left;border:0;border-radius:5px;padding:7px 8px;background:transparent;color:#cbd6ca;font-size:9px}.anatomy-muscle-results button:hover{background:var(--panel2);color:var(--lime)}.anatomy-attribution{font-size:8px;color:var(--muted);line-height:1.6;border-top:1px solid var(--line);padding-top:12px}@media(max-width:850px){.anatomy-v2-layout{grid-template-columns:1fr}.anatomy-v2-viewer,.anatomy-v2-canvas{min-height:540px}.anatomy-v2-panel{grid-template-columns:repeat(2,minmax(0,1fr))}.anatomy-attribution{grid-column:1/-1}}@media(max-width:550px){.anatomy-v2-toolbar{align-items:stretch;flex-direction:column}.anatomy-v2-viewer,.anatomy-v2-canvas{min-height:460px}.anatomy-v2-panel{grid-template-columns:1fr}.anatomy-v2 .studio-heading h1{font-size:30px}}
 .anatomy-fat-readout{font-size:10px;color:var(--muted);padding:9px 12px;border:1px solid var(--line);border-radius:7px}.anatomy-fat-notice{font-size:9px;line-height:1.5;color:#f4d6b4}.fat-slider-heading{display:flex;align-items:baseline;justify-content:space-between}.fat-slider-heading strong{font-size:23px;color:var(--lime)}.fat-slider-heading span,.fat-slider-scale{font-size:9px;color:var(--muted)}.anatomy-fat-slider{width:100%;accent-color:var(--lime)}.fat-slider-scale{display:flex;justify-content:space-between}.anatomy-swatch-skin{background:#d8a58b}
+
+
+/* Fine-grained, accessible body-fat reference slider */
+.anatomy-fat-slider{
+  display:block;
+  width:100%;
+  height:22px;
+  margin:2px 0;
+  padding:0;
+  appearance:none;
+  -webkit-appearance:none;
+  background:transparent;
+  cursor:pointer;
+  touch-action:pan-y;
+}
+.anatomy-fat-slider::-webkit-slider-runnable-track{
+  height:5px;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--lime),var(--line));
+}
+.anatomy-fat-slider::-moz-range-track{
+  height:5px;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--lime),var(--line));
+}
+.anatomy-fat-slider::-webkit-slider-thumb{
+  width:17px;
+  height:17px;
+  margin-top:-6px;
+  appearance:none;
+  -webkit-appearance:none;
+  border:2px solid var(--panel);
+  border-radius:50%;
+  background:var(--lime);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--lime) 28%,transparent);
+}
+.anatomy-fat-slider::-moz-range-thumb{
+  width:13px;
+  height:13px;
+  border:2px solid var(--panel);
+  border-radius:50%;
+  background:var(--lime);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--lime) 28%,transparent);
+}
+.anatomy-fat-slider:focus-visible{
+  outline:2px solid var(--lime);
+  outline-offset:4px;
+  border-radius:6px;
+}
+@media(prefers-reduced-motion:reduce){
+  .anatomy-fat-slider{scroll-behavior:auto}
+}
