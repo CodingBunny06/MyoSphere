@@ -12,7 +12,6 @@ import "./gym-page.css";
 
 type Exercise = { name: string; muscle: string; equipment: string };
 type SetRecord = TrainingSet;
-type SessionExercise = { name: string; sets: SetRecord[] };
 type WorkoutSession = TrainingSession;
 type PlanDay = { day: string; focus: string; exercises: string[] };
 type RoutineTemplate = { id: string; name: string; exercises: string[] };
@@ -136,9 +135,9 @@ export default function GymPage() {
   const [tab, setTab] = useState<Tab>("Overview");
   const [sessions, setSessions] = useState<WorkoutSession[]>(loadInitialSessions);
   const [plan, setPlan] = useState<PlanDay[]>(() => readStore(PLAN_KEY, defaultPlan));
-  const [templates, setTemplates] = useState<RoutineTemplate[]>(() => readStore(TEMPLATES_KEY, []));
+  const [templates, setTemplates] = useState<RoutineTemplate[]>(() => readStore<RoutineTemplate[]>(TEMPLATES_KEY, []));
   const [activeDay, setActiveDay] = useState(days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
-  const [activeSession, setActiveSession] = useState<WorkoutSession | null>(() => readStore(ACTIVE_KEY, null));
+  const [activeSession, setActiveSession] = useState<WorkoutSession | null>(() => readStore<WorkoutSession | null>(ACTIVE_KEY, null));
   const [sessionName, setSessionName] = useState("");
   const [selectedExercise, setSelectedExercise] = useState(exercises[0].name);
   const [reps, setReps] = useState("10");
@@ -147,7 +146,7 @@ export default function GymPage() {
   const [rir, setRir] = useState("");
   const [query, setQuery] = useState("");
   const [muscleFilter, setMuscleFilter] = useState("All");
-  const [unit, setUnit] = useState<"kg" | "lb">(() => readStore(UNIT_KEY, "kg"));
+  const [unit, setUnit] = useState<"kg" | "lb">(() => readStore<"kg" | "lb">(UNIT_KEY, "kg"));
   const [progressExercise, setProgressExercise] = useState(exercises[0].name);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [sessionDraft, setSessionDraft] = useState<WorkoutSession | null>(null);
@@ -165,7 +164,6 @@ export default function GymPage() {
   }, [activeSession]);
 
   const week = getWeekBounds(new Date());
-  const weekSessions = useMemo(() => sessions.filter((session) => session.date >= week.start && session.date <= week.end), [sessions, week.start, week.end]);
   const weekSessionCount = countSessionsInRange(sessions, week.start, week.end);
   const totalSets = sessions.reduce((sum, session) => sum + session.exercises.reduce((n, item) => n + item.sets.length, 0), 0);
   const totalVolume = useMemo(() => sessions.reduce((sum, session) => sum + sessionVolume(session), 0), [sessions]);
