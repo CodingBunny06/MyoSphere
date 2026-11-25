@@ -180,7 +180,8 @@ export default function GymPage() {
   const totalVolume = useMemo(() => sessions.reduce((sum, session) => sum + sessionVolume(session), 0), [sessions]);
   const records = useMemo(() => getPersonalRecords(sessions), [sessions]);
   const progression = useMemo(() => getExerciseProgression(sessions, progressExercise), [sessions, progressExercise]);
-  const rotationDays = Math.max(0, Math.floor((Date.parse(today() + "T00:00:00Z") - Date.parse(rotationStartDate + "T00:00:00Z")) / 86400000));
+  const rotationStart = Date.parse(rotationStartDate + "T00:00:00Z");
+  const rotationDays = Number.isFinite(rotationStart) ? Math.max(0, Math.floor((Date.parse(today() + "T00:00:00Z") - rotationStart) / 86400000)) : 0;
   const rotationRoutine = templates.length ? templates[rotationDays % templates.length] : null;
   const currentPlan: PlanDay = planMode === "rotation" && rotationRoutine
     ? { day: activeDay, focus: rotationRoutine.name, exercises: rotationRoutine.exercises }
