@@ -294,7 +294,7 @@
 
 /* Plan builder: separate reusable routines from schedule configuration */
 .gym-plan-subnav{display:flex;gap:7px;padding:5px;border:1px solid var(--line);border-radius:11px;background:var(--panel);width:max-content;max-width:100%}
-.gym-plan-subnav button{display:flex;align-items:center;gap:8px;padding:10px 16px;border:0;border-radius:7px;background:transparent;color:var(--muted);font:600 11px inherit;cursor:pointer}
+.gym-plan-subnav button{display:flex;align-items:center;gap:8px;padding:10px 16px;border:0;border-radius:7px;background:transparent;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer}
 .gym-plan-subnav button.active{background:var(--lime);color:#172016}
 .gym-plan-subnav small{font-size:9px;opacity:.75}
 .gym-plan-mode{display:grid;grid-template-columns:1fr 1fr;gap:10px}
