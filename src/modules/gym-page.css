@@ -281,7 +281,7 @@
  .gym-tabs{top:0;margin:0 -2px 14px;padding:4px;gap:2px}.gym-tabs button{padding:10px 5px;font-size:9px}
  .gym-content{gap:12px}.gym-welcome{min-height:0;padding:20px 17px}.gym-welcome h2{max-width:250px;font-size:25px}.gym-welcome p{max-width:250px;font-size:10px}.gym-welcome-actions{gap:12px}
  .gym-primary,.gym-secondary,.gym-finish{min-height:40px;padding:10px 12px;font-size:10px}.gym-quiet-action{font-size:10px}
- .gym-today-count{right:13px;top:18px;transform:none;width:65px;height:65px}.gym-today-count strong{font-size:23px}.gym-today-count span{font-size:6px}.gym-today-count i{display:none}
+ .gym-welcome h2,.gym-welcome p{max-width:calc(100% - 72px)}.gym-today-count{right:13px;top:18px;transform:none;width:65px;height:65px}.gym-today-count strong{font-size:23px}.gym-today-count span{font-size:6px}.gym-today-count i{display:none}
  .gym-week-strip{grid-template-columns:repeat(7,minmax(55px,1fr));overflow-x:auto;padding-bottom:4px}.gym-week-strip button{min-height:80px;padding:9px 7px;gap:5px}.gym-week-strip button strong{font-size:9px}.gym-week-strip button small{font-size:7px}
  .gym-kpis{gap:6px}.gym-kpis article{padding:12px 10px;gap:5px}.gym-kpis strong{font-size:20px}.gym-kpis small{font-size:8px}
  .gym-two-col,.gym-log-layout{grid-template-columns:1fr}.gym-panel{padding:15px}.gym-day-picker{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.gym-day-picker button{min-height:90px;padding:11px}
