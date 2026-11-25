@@ -1,14 +1,29 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  countSessionsInRange,
+  getExerciseProgression,
+  getPersonalRecords,
+  getWeekBounds,
+  sessionVolume,
+  type TrainingSession,
+  type TrainingSet,
+} from "./trainingMath.mjs";
 import "./gym-page.css";
 
 type Exercise = { name: string; muscle: string; equipment: string };
-type SetRecord = { id: string; reps: number; load: number; rpe?: number };
-type SessionExercise = { name: string; sets: SetRecord[] };
-type WorkoutSession = { id: string; date: string; name: string; startedAt: string; durationMinutes: number; exercises: SessionExercise[] };
+type SetRecord = TrainingSet;
+type WorkoutSession = TrainingSession;
 type PlanDay = { day: string; focus: string; exercises: string[] };
+type RoutineTemplate = { id: string; name: string; exercises: string[] };
+type Tab = "Overview" | "Plan" | "Start" | "Stats" | "Exercises";
 
 const STORAGE_KEY = "myosphere-gym-sessions-v1";
 const PLAN_KEY = "myosphere-gym-plan-v1";
+const ACTIVE_KEY = "myosphere-gym-active-session-v1";
+const UNIT_KEY = "myosphere-gym-unit-v1";
+const TEMPLATES_KEY = "myosphere-gym-templates-v1";
+const LB_PER_KG = 2.2046226218;
+
 const exercises: Exercise[] = [
   { name: "Barbell bench press", muscle: "Chest", equipment: "Barbell" },
   { name: "Incline dumbbell press", muscle: "Chest", equipment: "Dumbbells" },
@@ -41,90 +56,149 @@ const defaultPlan: PlanDay[] = [
   { day: "Saturday", focus: "Chest + back", exercises: ["Barbell bench press", "Incline dumbbell press", "Lat pulldown", "Seated cable row"] },
   { day: "Sunday", focus: "Rest", exercises: [] },
 ];
-const today = () => { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const today = () => {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+};
+function readStore<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) as T : fallback;
+  } catch {
+    return fallback;
+  }
+}
+function saveStore<T>(key: string, value: T) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* Storage may be unavailable or full. */ }
+}
 function loadInitialSessions(): WorkoutSession[] {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved !== null) {
-    try { return JSON.parse(saved) as WorkoutSession[]; } catch { return []; }
+    try {
+      const parsed: unknown = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed as WorkoutSession[];
+      return [];
+    } catch { return []; }
   }
-  const legacy = readStore<Array<{ id?: string; date: string; exercise: string; sets: number; reps: number; load: number }>>("myosphere-training-v1", []);
+  const legacy = readStore<Array<{ date: string; exercise: string; sets: number; reps: number; load: number }>>("myosphere-training-v1", []);
   const grouped = new Map<string, WorkoutSession>();
   legacy.forEach((entry) => {
-    const session = grouped.get(entry.date) ?? { id: `legacy-${entry.date}`, date: entry.date, name: "Imported workout", startedAt: new Date(entry.date + "T12:00:00").toISOString(), durationMinutes: 0, exercises: [] };
+    if (!entry || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date) || !entry.exercise) return;
+    const session = grouped.get(entry.date) ?? {
+      id: `legacy-${entry.date}`, date: entry.date, name: "Imported workout",
+      startedAt: new Date(entry.date + "T12:00:00").toISOString(), durationMinutes: 0, exercises: [],
+    };
     const existing = session.exercises.find((item) => item.name === entry.exercise);
-    const migratedSets = Array.from({ length: Math.max(0, entry.sets) }, () => ({ id: makeId(), reps: entry.reps, load: entry.load }));
+    const migratedSets = Array.from({ length: Math.min(100, Math.max(0, Number(entry.sets) || 0)) }, () => ({
+      id: makeId(), reps: Number(entry.reps) || 0, load: Number(entry.load) || 0,
+    }));
     if (existing) existing.sets.push(...migratedSets);
     else session.exercises.push({ name: entry.exercise, sets: migratedSets });
     grouped.set(entry.date, session);
   });
   return [...grouped.values()].sort((a, b) => b.date.localeCompare(a.date));
 }
-const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-function readStore<T>(key: string, fallback: T): T {
-  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) as T : fallback; } catch { return fallback; }
+function displayDate(value: string) {
+  return new Date(value + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
-function saveStore<T>(key: string, value: T) { localStorage.setItem(key, JSON.stringify(value)); }
-function sessionVolume(session: WorkoutSession) {
-  return session.exercises.reduce((total, exercise) => total + exercise.sets.reduce((sum, set) => sum + set.reps * set.load, 0), 0);
+function displayLoad(value: number, unit: "kg" | "lb") {
+  return unit === "lb" ? value * LB_PER_KG : value;
 }
-type Tab = "Overview" | "Plan" | "Start" | "Stats" | "Exercises";
+function ProgressionChart({ points, unit }: { points: ReturnType<typeof getExerciseProgression>; unit: "kg" | "lb" }) {
+  if (!points.length) return <div className="gym-empty"><strong>No history for this exercise yet</strong><p>Log this movement in a workout to build its progression chart.</p></div>;
+  const values = points.map((point) => displayLoad(point.bestLoad, unit));
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const span = Math.max(1, high - low);
+  const coords = values.map((value, index) => ({
+    x: points.length === 1 ? 300 : 38 + (index / (points.length - 1)) * 524,
+    y: 174 - ((value - low) / span) * 128,
+  }));
+  const polyline = coords.map((point) => `${point.x},${point.y}`).join(" ");
+  return <div className="gym-chart-wrap">
+    <div className="gym-chart-summary"><strong>{values[values.length - 1].toFixed(1)} {unit}</strong><span>latest best set load</span></div>
+    <svg className="gym-progression-chart" viewBox="0 0 600 220" role="img" aria-label={`Best set load progression across ${points.length} logged sessions`}>
+      {[46, 110, 174].map((y) => <line key={y} x1="38" x2="562" y1={y} y2={y} className="gym-chart-grid" />)}
+      <polyline points={polyline} className="gym-chart-line" />
+      {coords.map((point, index) => <circle key={points[index].date + index} cx={point.x} cy={point.y} r="5" className="gym-chart-point"><title>{points[index].date}: {values[index].toFixed(1)} {unit}</title></circle>)}
+      <text x="38" y="204" className="gym-chart-label">{points[0].date.slice(5)}</text>
+      <text x="562" y="204" textAnchor="end" className="gym-chart-label">{points[points.length - 1].date.slice(5)}</text>
+      <text x="38" y="30" className="gym-chart-label">{high.toFixed(1)} {unit}</text>
+      <text x="38" y="190" className="gym-chart-label">{low.toFixed(1)} {unit}</text>
+    </svg>
+    <p className="gym-chart-note">Each point is the heaviest set logged for this exercise in that session. This tracks load, not technique or readiness.</p>
+  </div>;
+}
 
 export default function GymPage() {
   const [tab, setTab] = useState<Tab>("Overview");
   const [sessions, setSessions] = useState<WorkoutSession[]>(loadInitialSessions);
   const [plan, setPlan] = useState<PlanDay[]>(() => readStore(PLAN_KEY, defaultPlan));
+  const [templates, setTemplates] = useState<RoutineTemplate[]>(() => readStore<RoutineTemplate[]>(TEMPLATES_KEY, []));
   const [activeDay, setActiveDay] = useState(days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
-  const [activeSession, setActiveSession] = useState<WorkoutSession | null>(null);
+  const [activeSession, setActiveSession] = useState<WorkoutSession | null>(() => readStore<WorkoutSession | null>(ACTIVE_KEY, null));
   const [sessionName, setSessionName] = useState("");
   const [selectedExercise, setSelectedExercise] = useState(exercises[0].name);
   const [reps, setReps] = useState("10");
   const [load, setLoad] = useState("0");
   const [rpe, setRpe] = useState("");
+  const [rir, setRir] = useState("");
   const [query, setQuery] = useState("");
   const [muscleFilter, setMuscleFilter] = useState("All");
-  const [unit, setUnit] = useState<"kg" | "lb">("kg");
+  const [unit, setUnit] = useState<"kg" | "lb">(() => readStore<"kg" | "lb">(UNIT_KEY, "kg"));
+  const [progressExercise, setProgressExercise] = useState(exercises[0].name);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [sessionDraft, setSessionDraft] = useState<WorkoutSession | null>(null);
+  const [templateName, setTemplateName] = useState("");
 
   useEffect(() => saveStore(STORAGE_KEY, sessions), [sessions]);
   useEffect(() => saveStore(PLAN_KEY, plan), [plan]);
+  useEffect(() => saveStore(TEMPLATES_KEY, templates), [templates]);
+  useEffect(() => saveStore(UNIT_KEY, unit), [unit]);
+  useEffect(() => {
+    if (activeSession) saveStore(ACTIVE_KEY, activeSession);
+    else {
+      try { localStorage.removeItem(ACTIVE_KEY); } catch { /* Storage may be unavailable. */ }
+    }
+  }, [activeSession]);
 
-  const totalVolume = useMemo(() => sessions.reduce((sum, session) => sum + sessionVolume(session), 0), [sessions]);
-  const weekSessions = sessions.filter((session) => {
-    const d = new Date(session.date + "T00:00:00");
-    const now = new Date();
-    const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7)); monday.setHours(0, 0, 0, 0);
-    return d >= monday;
-  });
+  const week = getWeekBounds(new Date());
+  const weekSessionCount = countSessionsInRange(sessions, week.start, week.end);
   const totalSets = sessions.reduce((sum, session) => sum + session.exercises.reduce((n, item) => n + item.sets.length, 0), 0);
-  const displayLoad = (value: number) => unit === "lb" ? value * 2.2046226218 : value;
-  const displayVolume = displayLoad(totalVolume);
-  const bestLoads = useMemo(() => {
-    const best = new Map<string, number>();
-    sessions.forEach((session) => session.exercises.forEach((item) => item.sets.forEach((set) => best.set(item.name, Math.max(best.get(item.name) ?? 0, set.load)))));
-    return [...best.entries()].sort((a, b) => b[1] - a[1]);
-  }, [sessions]);
+  const totalVolume = useMemo(() => sessions.reduce((sum, session) => sum + sessionVolume(session), 0), [sessions]);
+  const records = useMemo(() => getPersonalRecords(sessions), [sessions]);
+  const progression = useMemo(() => getExerciseProgression(sessions, progressExercise), [sessions, progressExercise]);
   const currentPlan = plan.find((item) => item.day === activeDay) ?? defaultPlan[0];
   const filteredExercises = exercises.filter((item) => (muscleFilter === "All" || item.muscle === muscleFilter) && item.name.toLowerCase().includes(query.toLowerCase()));
+  const lastSession = sessions[0];
 
   function changeUnit(nextUnit: "kg" | "lb") {
     if (nextUnit === unit) return;
     const currentLoad = Number(load);
-    if (Number.isFinite(currentLoad)) {
-      setLoad((nextUnit === "lb" ? currentLoad * 2.2046226218 : currentLoad / 2.2046226218).toFixed(1));
-    }
+    if (Number.isFinite(currentLoad)) setLoad((nextUnit === "lb" ? currentLoad * LB_PER_KG : currentLoad / LB_PER_KG).toFixed(1));
     setUnit(nextUnit);
   }
-
-  function startSession(name?: string) {
-    const planned = currentPlan;
-    const label = name ?? (planned.focus && planned.focus !== "Rest" ? planned.focus : "Training session");
+  function startSession(name?: string, plannedExercises = currentPlan.exercises) {
+    const label = name ?? (currentPlan.focus && currentPlan.focus !== "Rest" ? currentPlan.focus : "Training session");
+    const next: WorkoutSession = {
+      id: makeId(), date: today(), name: label, startedAt: new Date().toISOString(), durationMinutes: 0,
+      exercises: plannedExercises.map((exercise) => ({ name: exercise, sets: [] })),
+    };
     setSessionName(label);
-    setActiveSession({ id: makeId(), date: today(), name: label, startedAt: new Date().toISOString(), durationMinutes: 0, exercises: [] });
+    setSelectedExercise(plannedExercises[0] ?? exercises[0].name);
+    setActiveSession(next);
     setTab("Start");
   }
   function addSet(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!activeSession || Number(reps) < 1 || Number(load) < 0) return;
-    const record: SetRecord = { id: makeId(), reps: Number(reps), load: unit === "lb" ? Number(load) / 2.2046226218 : Number(load), ...(rpe ? { rpe: Number(rpe) } : {}) };
+    const repsValue = Number(reps);
+    const loadValue = Number(load);
+    if (!activeSession || !Number.isInteger(repsValue) || repsValue < 1 || repsValue > 100 || !Number.isFinite(loadValue) || loadValue < 0 || loadValue > 1000) return;
+    const record: SetRecord = {
+      id: makeId(), reps: repsValue, load: unit === "lb" ? loadValue / LB_PER_KG : loadValue,
+      ...(rpe ? { rpe: Number(rpe) } : {}), ...(rir ? { rir: Number(rir) } : {}),
+    };
     setActiveSession((current) => {
       if (!current) return current;
       const existing = current.exercises.find((item) => item.name === selectedExercise);
@@ -132,13 +206,26 @@ export default function GymPage() {
         ? current.exercises.map((item) => item.name === selectedExercise ? { ...item, sets: [...item.sets, record] } : item)
         : [...current.exercises, { name: selectedExercise, sets: [record] }] };
     });
-    setReps("10"); setRpe("");
+    setReps("10"); setRpe(""); setRir("");
+  }
+  function removeLiveSet(exerciseName: string, setId: string) {
+    setActiveSession((current) => current ? {
+      ...current,
+      exercises: current.exercises.map((item) => item.name === exerciseName ? { ...item, sets: item.sets.filter((set) => set.id !== setId) } : item).filter((item) => item.sets.length > 0),
+    } : current);
   }
   function finishSession() {
-    if (!activeSession) return;
+    if (!activeSession || !activeSession.exercises.some((item) => item.sets.length)) return;
     const durationMinutes = Math.max(1, Math.round((Date.now() - new Date(activeSession.startedAt).getTime()) / 60000));
-    if (activeSession.exercises.some((item) => item.sets.length)) setSessions((current) => [{ ...activeSession, durationMinutes }, ...current]);
-    setActiveSession(null); setTab("Overview");
+    setSessions((current) => [{ ...activeSession, date: activeSession.date || today(), durationMinutes }, ...current].sort((a, b) => b.date.localeCompare(a.date)));
+    setActiveSession(null);
+    setTab("Overview");
+  }
+  function cancelSession() {
+    if (!activeSession || window.confirm("Discard this in-progress workout? Its sets will not be saved.")) {
+      setActiveSession(null);
+      setTab("Overview");
+    }
   }
   function updatePlanFocus(value: string) {
     setPlan((current) => current.map((item) => item.day === activeDay ? { ...item, focus: value } : item));
@@ -149,6 +236,74 @@ export default function GymPage() {
   function removePlanExercise(name: string) {
     setPlan((current) => current.map((item) => item.day === activeDay ? { ...item, exercises: item.exercises.filter((value) => value !== name) } : item));
   }
+  function copyLastWorkoutToPlan() {
+    if (!lastSession) return;
+    setPlan((current) => current.map((item) => item.day === activeDay
+      ? { ...item, focus: lastSession.name, exercises: lastSession.exercises.map((exercise) => exercise.name) }
+      : item));
+  }
+  function saveTemplate() {
+    const name = templateName.trim() || currentPlan.focus || `${activeDay} routine`;
+    if (!currentPlan.exercises.length) return;
+    setTemplates((current) => [{ id: makeId(), name, exercises: [...currentPlan.exercises] }, ...current]);
+    setTemplateName("");
+  }
+  function applyTemplate(template: RoutineTemplate) {
+    setPlan((current) => current.map((item) => item.day === activeDay ? { ...item, focus: template.name, exercises: [...template.exercises] } : item));
+  }
+  function openSessionEditor(session: WorkoutSession) {
+    setEditingSessionId(session.id);
+    setSessionDraft(JSON.parse(JSON.stringify(session)) as WorkoutSession);
+  }
+  function updateDraftSet(exerciseName: string, setId: string, field: "reps" | "load" | "rpe" | "rir", value: string) {
+    if (!sessionDraft) return;
+    const numeric = value === "" ? undefined : Number(value);
+    setSessionDraft({
+      ...sessionDraft,
+      exercises: sessionDraft.exercises.map((exercise) => exercise.name === exerciseName ? {
+        ...exercise,
+        sets: exercise.sets.map((set) => {
+          if (set.id !== setId) return set;
+          const next = { ...set } as SetRecord;
+          if (field === "reps") next.reps = numeric ?? 1;
+          if (field === "load") next.load = unit === "lb" ? (numeric ?? 0) / LB_PER_KG : numeric ?? 0;
+          if (field === "rpe" || field === "rir") {
+            if (numeric === undefined) delete next[field];
+            else next[field] = numeric;
+          }
+          return next;
+        }),
+      } : exercise),
+    });
+  }
+  function removeDraftSet(exerciseName: string, setId: string) {
+    if (!sessionDraft) return;
+    setSessionDraft({
+      ...sessionDraft,
+      exercises: sessionDraft.exercises.map((exercise) => exercise.name === exerciseName
+        ? { ...exercise, sets: exercise.sets.filter((set) => set.id !== setId) }
+        : exercise).filter((exercise) => exercise.sets.length > 0),
+    });
+  }
+  function saveSessionEdit() {
+    if (!sessionDraft || !sessionDraft.name.trim()) return;
+    const cleaned = {
+      ...sessionDraft,
+      name: sessionDraft.name.trim(),
+      exercises: sessionDraft.exercises.map((exercise) => ({
+        ...exercise,
+        sets: exercise.sets.filter((set) => Number.isFinite(set.reps) && set.reps >= 1 && Number.isFinite(set.load) && set.load >= 0),
+      })).filter((exercise) => exercise.sets.length > 0),
+    };
+    setSessions((current) => current.map((session) => session.id === editingSessionId ? cleaned : session).sort((a, b) => b.date.localeCompare(a.date)));
+    setEditingSessionId(null);
+    setSessionDraft(null);
+  }
+  function deleteSession(sessionId: string) {
+    if (!window.confirm("Permanently delete this saved workout?")) return;
+    setSessions((current) => current.filter((session) => session.id !== sessionId));
+    if (editingSessionId === sessionId) { setEditingSessionId(null); setSessionDraft(null); }
+  }
 
   return <section className="gym-page">
     <header className="gym-heading">
@@ -158,30 +313,76 @@ export default function GymPage() {
     <nav className="gym-tabs" aria-label="Gym sections">{(["Overview", "Plan", "Start", "Stats", "Exercises"] as Tab[]).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{item}</button>)}</nav>
 
     {tab === "Overview" && <div className="gym-content">
-      <div className="gym-welcome"><div><span className="gym-eyebrow">YOUR TRAINING SPACE</span><h2>Show up. <em>Get stronger.</em></h2><p>{weekSessions.length} sessions logged this week. Every session counts.</p><button className="gym-primary" onClick={() => startSession()}>Start a workout <span>↗</span></button></div><div className="gym-welcome-mark">M<span>✳</span></div></div>
+      <div className="gym-welcome"><div><span className="gym-eyebrow">YOUR TRAINING SPACE</span><h2>Show up. <em>Get stronger.</em></h2><p>{weekSessionCount} sessions logged this week. Every session counts.</p><button className="gym-primary" onClick={() => startSession()}>Start a workout <span>↗</span></button></div><div className="gym-welcome-mark">M<span>✳</span></div></div>
       <div className="gym-kpis">
-        <article><span>THIS WEEK</span><strong>{weekSessions.length}</strong><small>workout sessions</small></article>
+        <article><span>THIS WEEK</span><strong>{weekSessionCount}</strong><small>{week.start} – {week.end}</small></article>
         <article><span>TOTAL SETS</span><strong>{totalSets}</strong><small>logged working sets</small></article>
-        <article><span>TOTAL VOLUME</span><strong>{Math.round(displayVolume).toLocaleString()}</strong><small>{unit} × reps · logged load volume</small></article>
+        <article><span>TOTAL VOLUME</span><strong>{Math.round(displayLoad(totalVolume, unit)).toLocaleString()}</strong><small>{unit} × reps · cumulative logged volume</small></article>
       </div>
       <div className="gym-two-col">
-        <section className="gym-panel"><div className="gym-panel-title"><div><span className="gym-eyebrow">YOUR PROGRAM</span><h3>Today's plan</h3></div><button onClick={() => setTab("Plan")}>Edit plan ↗</button></div><div className="gym-today-plan"><span>{currentPlan.day.toUpperCase()}</span><strong>{currentPlan.focus || "Rest / recovery"}</strong><small>{currentPlan.exercises.length} planned movements</small></div>{currentPlan.exercises.slice(0, 4).map((name) => <div className="gym-list-row" key={name}>{name}<span>↗</span></div>)}<button className="gym-inline-link" onClick={() => startSession(currentPlan.focus)}>Start today's plan →</button></section>
-        <section className="gym-panel"><div className="gym-panel-title"><div><span className="gym-eyebrow">RECENT ACTIVITY</span><h3>Latest sessions</h3></div><button onClick={() => setTab("Stats")}>View stats ↗</button></div>{sessions.length ? sessions.slice(0, 4).map((session) => <div className="gym-history-row" key={session.id}><div><strong>{session.name}</strong><small>{session.date} · {session.exercises.length} exercises</small></div><b>{Math.round(displayLoad(sessionVolume(session))).toLocaleString()} {unit}</b></div>) : <div className="gym-empty"><strong>No sessions yet</strong><p>Start your first workout to build your training history.</p></div>}</section>
+        <section className="gym-panel"><div className="gym-panel-title"><div><span className="gym-eyebrow">YOUR PROGRAM</span><h3>Today's plan</h3></div><button onClick={() => setTab("Plan")}>Edit plan ↗</button></div><div className="gym-today-plan"><span>{currentPlan.day.toUpperCase()}</span><strong>{currentPlan.focus || "Rest / recovery"}</strong><small>{currentPlan.exercises.length} planned movements</small></div>{currentPlan.exercises.slice(0, 4).map((name) => <div className="gym-list-row" key={name}>{name}<span>↗</span></div>)}<button className="gym-inline-link" onClick={() => startSession(currentPlan.focus, currentPlan.exercises)}>Start today's plan →</button></section>
+        <section className="gym-panel"><div className="gym-panel-title"><div><span className="gym-eyebrow">RECENT ACTIVITY</span><h3>Latest sessions</h3></div><button onClick={() => setTab("Stats")}>View stats ↗</button></div>{sessions.length ? sessions.slice(0, 4).map((session) => <div className="gym-history-row" key={session.id}><div><strong>{session.name}</strong><small>{displayDate(session.date)} · {session.exercises.length} exercises</small></div><b>{Math.round(displayLoad(sessionVolume(session), unit)).toLocaleString()} {unit}</b></div>) : <div className="gym-empty"><strong>No sessions yet</strong><p>Start your first workout to build your training history.</p></div>}</section>
       </div>
+      {activeSession && <section className="gym-panel gym-resume-card"><div><span className="gym-eyebrow">WORKOUT IN PROGRESS</span><strong>{activeSession.name}</strong><small>{activeSession.exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0)} sets saved locally · started {new Date(activeSession.startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small></div><button className="gym-primary" onClick={() => setTab("Start")}>Resume workout ↗</button></section>}
     </div>}
 
-    {tab === "Plan" && <div className="gym-content"><div className="gym-section-intro"><span className="gym-eyebrow">WEEKLY PROGRAMMING</span><h2>Your training <em>split.</em></h2><p>Choose a day, edit its focus and add movements. Your plan is saved on this device.</p></div>
+    {tab === "Plan" && <div className="gym-content">
+      <div className="gym-section-intro"><span className="gym-eyebrow">WEEKLY PROGRAMMING</span><h2>Your training <em>split.</em></h2><p>Choose a day, edit its focus, save routines and reuse previous workouts. Changes stay on this device.</p></div>
       <div className="gym-day-picker">{plan.map((item) => <button key={item.day} className={activeDay === item.day ? "active" : ""} onClick={() => setActiveDay(item.day)}><span>{item.day.slice(0, 3).toUpperCase()}</span><strong>{item.focus || "Unset"}</strong><small>{item.exercises.length} exercises</small></button>)}</div>
-      <section className="gym-panel gym-plan-editor"><label>Session focus<input value={currentPlan.focus} onChange={(event) => updatePlanFocus(event.target.value)} placeholder="e.g. Push, Pull, Legs, Rest" maxLength={40}/></label><div className="gym-panel-title"><div><span className="gym-eyebrow">{activeDay.toUpperCase()}</span><h3>Planned exercises</h3></div><span className="gym-count">{currentPlan.exercises.length} movements</span></div>{currentPlan.exercises.map((name) => <div className="gym-list-row" key={name}>{name}<button onClick={() => removePlanExercise(name)} aria-label={`Remove ${name}`}>×</button></div>)}<label>Add a movement<select value={selectedExercise} onChange={(event) => setSelectedExercise(event.target.value)}>{exercises.map((item) => <option key={item.name}>{item.name}</option>)}</select></label><button className="gym-secondary" onClick={() => addPlanExercise(selectedExercise)}>＋ Add to {activeDay}</button><button className="gym-primary" onClick={() => startSession(currentPlan.focus)}>Start this workout ↗</button></section>
+      <section className="gym-panel gym-plan-editor">
+        <label>Session focus<input value={currentPlan.focus} onChange={(event) => updatePlanFocus(event.target.value)} placeholder="e.g. Push, Pull, Legs, Rest" maxLength={40}/></label>
+        <div className="gym-panel-title"><div><span className="gym-eyebrow">{activeDay.toUpperCase()}</span><h3>Planned exercises</h3></div><span className="gym-count">{currentPlan.exercises.length} movements</span></div>
+        {currentPlan.exercises.map((name) => <div className="gym-list-row" key={name}>{name}<button onClick={() => removePlanExercise(name)} aria-label={`Remove ${name}`}>×</button></div>)}
+        <label>Add a movement<select value={selectedExercise} onChange={(event) => setSelectedExercise(event.target.value)}>{exercises.map((item) => <option key={item.name}>{item.name}</option>)}</select></label>
+        <button className="gym-secondary" onClick={() => addPlanExercise(selectedExercise)}>＋ Add to {activeDay}</button>
+        <div className="gym-template-tools">
+          <label>Save this day as a routine<input value={templateName} onChange={(event) => setTemplateName(event.target.value)} placeholder={currentPlan.focus || "Routine name"}/></label>
+          <button className="gym-secondary" onClick={saveTemplate} disabled={!currentPlan.exercises.length}>Save routine template</button>
+          <button className="gym-secondary" onClick={copyLastWorkoutToPlan} disabled={!lastSession}>Copy last completed workout here</button>
+        </div>
+        {templates.length > 0 && <div className="gym-template-list"><span className="gym-eyebrow">SAVED ROUTINES</span>{templates.map((template) => <div className="gym-history-row" key={template.id}><div><strong>{template.name}</strong><small>{template.exercises.length} exercises</small></div><button className="gym-inline-link" onClick={() => applyTemplate(template)}>Apply to {activeDay} ↗</button></div>)}</div>}
+        <button className="gym-primary" onClick={() => startSession(currentPlan.focus, currentPlan.exercises)}>Start this workout ↗</button>
+      </section>
     </div>}
 
-    {tab === "Start" && <div className="gym-content"><div className="gym-section-intro"><span className="gym-eyebrow">LIVE WORKOUT</span><h2>{activeSession ? activeSession.name : "Ready when you are."}</h2><p>{activeSession ? "Log each working set as you go. Finish the session to save it to your history." : "Start a session to track exercises, reps and load."}</p></div>
-      {!activeSession ? <section className="gym-panel gym-start-card"><label>Session name<input value={sessionName} onChange={(event) => setSessionName(event.target.value)} placeholder="e.g. Push day"/></label><button className="gym-primary" onClick={() => startSession(sessionName || "Training session")}>Start session ↗</button></section> : <><section className="gym-panel gym-session-toolbar"><div><span className="gym-eyebrow">SESSION IN PROGRESS</span><strong>{activeSession.exercises.reduce((n, item) => n + item.sets.length, 0)} working sets</strong></div><button className="gym-finish" onClick={finishSession}>Finish workout ✓</button></section><div className="gym-log-layout"><form className="gym-panel gym-set-form" onSubmit={addSet}><h3>Log a working set</h3><label>Exercise<select value={selectedExercise} onChange={(event) => setSelectedExercise(event.target.value)}>{exercises.map((item) => <option key={item.name}>{item.name}</option>)}</select></label><div className="gym-form-row"><label>Reps<input type="number" min="1" max="100" value={reps} onChange={(event) => setReps(event.target.value)} required/></label><label>Load ({unit})<input type="number" min="0" max="1000" step="0.5" value={load} onChange={(event) => setLoad(event.target.value)} required/></label></div><label>RPE (optional)<select value={rpe} onChange={(event) => setRpe(event.target.value)}><option value="">Not recorded</option>{Array.from({length: 10}, (_, i) => String(i + 1)).map((value) => <option key={value} value={value}>{value}</option>)}</select></label><button className="gym-primary" type="submit">＋ Add set</button></form><section className="gym-panel gym-live-log"><h3>Session log</h3>{activeSession.exercises.length ? activeSession.exercises.map((item) => <div className="gym-live-exercise" key={item.name}><strong>{item.name}</strong>{item.sets.map((set, index) => <div className="gym-set-row" key={set.id}><span>Set {index + 1}</span><b>{set.reps} reps × {displayLoad(set.load).toFixed(1)} {unit}</b><small>{set.rpe ? `RPE ${set.rpe}` : "RPE —"}</small></div>)}</div>) : <div className="gym-empty"><strong>Nothing logged yet</strong><p>Add your first working set to start the session log.</p></div>}</section></div></>}
+    {tab === "Start" && <div className="gym-content">
+      <div className="gym-section-intro"><span className="gym-eyebrow">LIVE WORKOUT</span><h2>{activeSession ? activeSession.name : "Ready when you are."}</h2><p>{activeSession ? "Your in-progress session is saved locally as you log sets. Finish to add it to history." : "Start a session to track exercises, reps, load, effort and reps in reserve."}</p></div>
+      {!activeSession ? <section className="gym-panel gym-start-card"><label>Session name<input value={sessionName} onChange={(event) => setSessionName(event.target.value)} placeholder="e.g. Push day"/></label><button className="gym-primary" onClick={() => startSession(sessionName || "Training session", [])}>Start session ↗</button></section> : <>
+        <section className="gym-panel gym-session-toolbar"><div><span className="gym-eyebrow">SESSION IN PROGRESS</span><strong>{activeSession.exercises.reduce((n, item) => n + item.sets.length, 0)} working sets · {activeSession.exercises.length} exercises</strong></div><div className="gym-session-actions"><button className="gym-finish" onClick={finishSession} disabled={!activeSession.exercises.some((item) => item.sets.length)}>Finish workout ✓</button><button className="gym-text-danger" onClick={cancelSession}>Discard</button></div></section>
+        <div className="gym-log-layout">
+          <form className="gym-panel gym-set-form" onSubmit={addSet}>
+            <h3>Log a working set</h3>
+            <label>Exercise<select value={selectedExercise} onChange={(event) => setSelectedExercise(event.target.value)}>{exercises.map((item) => <option key={item.name}>{item.name}</option>)}</select></label>
+            <div className="gym-form-row"><label>Reps<input type="number" min="1" max="100" step="1" value={reps} onChange={(event) => setReps(event.target.value)} required/></label><label>Load ({unit})<input type="number" min="0" max="1000" step="0.5" value={load} onChange={(event) => setLoad(event.target.value)} required/></label></div>
+            <div className="gym-form-row"><label>RPE · optional<select value={rpe} onChange={(event) => setRpe(event.target.value)}><option value="">Not recorded</option>{Array.from({ length: 10 }, (_, index) => String(index + 1)).map((value) => <option key={value}>{value}</option>)}</select></label><label>RIR · optional<select value={rir} onChange={(event) => setRir(event.target.value)}><option value="">Not recorded</option>{Array.from({ length: 6 }, (_, index) => String(index)).map((value) => <option key={value}>{value}</option>)}</select></label></div>
+            <button className="gym-primary" type="submit">＋ Add set</button>
+          </form>
+          <section className="gym-panel gym-live-log"><h3>Session log</h3>{activeSession.exercises.length ? activeSession.exercises.map((item) => <div className="gym-live-exercise" key={item.name}><strong>{item.name}</strong>{item.sets.length ? item.sets.map((set, index) => <div className="gym-set-row" key={set.id}><span>Set {index + 1}</span><b>{set.reps} reps × {displayLoad(set.load, unit).toFixed(1)} {unit}</b><small>{[set.rpe ? `RPE ${set.rpe}` : "", set.rir !== undefined ? `RIR ${set.rir}` : ""].filter(Boolean).join(" · ") || "Effort —"}</small><button className="gym-icon-button" type="button" onClick={() => removeLiveSet(item.name, set.id)} aria-label={`Remove set ${index + 1}`}>×</button></div>) : <small className="gym-planned-label">Planned · no sets logged</small>}</div>) : <div className="gym-empty"><strong>Nothing logged yet</strong><p>Add your first working set to start the session log.</p></div>}</section>
+        </div>
+      </>}
     </div>}
 
-    {tab === "Stats" && <div className="gym-content"><div className="gym-section-intro"><span className="gym-eyebrow">TRAINING ANALYTICS</span><h2>Progress you can <em>measure.</em></h2><p>Session history and simple performance records calculated from the sets you log.</p></div><div className="gym-kpis"><article><span>SESSIONS</span><strong>{sessions.length}</strong><small>all-time completed workouts</small></article><article><span>WORKING SETS</span><strong>{totalSets}</strong><small>all-time recorded sets</small></article><article><span>VOLUME</span><strong>{Math.round(displayVolume).toLocaleString()}</strong><small>{unit} × reps · cumulative</small></article></div><section className="gym-panel"><div className="gym-panel-title"><div><span className="gym-eyebrow">PERSONAL RECORDS</span><h3>Heaviest logged load</h3></div><span className="gym-count">{bestLoads.length} exercises</span></div>{bestLoads.length ? bestLoads.map(([name, value]) => <div className="gym-history-row" key={name}><div><strong>{name}</strong><small>Highest single-set load recorded</small></div><b>{displayLoad(value).toFixed(1)} {unit}</b></div>) : <div className="gym-empty"><strong>No records yet</strong><p>Complete a workout to start building your personal records.</p></div>}</section><section className="gym-panel"><div className="gym-panel-title"><div><span className="gym-eyebrow">SESSION HISTORY</span><h3>Completed workouts</h3></div><span className="gym-count">{sessions.length} total</span></div>{sessions.length ? sessions.map((session) => <div className="gym-history-row" key={session.id}><div><strong>{session.name}</strong><small>{session.date} · {session.durationMinutes} min · {session.exercises.reduce((n, item) => n + item.sets.length, 0)} sets</small></div><b>{Math.round(displayLoad(sessionVolume(session))).toLocaleString()} {unit}</b></div>) : <div className="gym-empty"><strong>Your history starts with one session</strong><p>Completed workouts will appear here.</p></div>}</section></div>}
+    {tab === "Stats" && <div className="gym-content">
+      <div className="gym-section-intro"><span className="gym-eyebrow">TRAINING ANALYTICS</span><h2>Progress you can <em>measure.</em></h2><p>Metrics are calculated from completed sets only. They describe logged performance, not health or training readiness.</p></div>
+      <div className="gym-kpis"><article><span>SESSIONS</span><strong>{sessions.length}</strong><small>all-time completed workouts</small></article><article><span>WORKING SETS</span><strong>{totalSets}</strong><small>all-time recorded sets</small></article><article><span>VOLUME</span><strong>{Math.round(displayLoad(totalVolume, unit)).toLocaleString()}</strong><small>{unit} × reps · sum of load × reps</small></article></div>
+      <section className="gym-panel"><div className="gym-panel-title"><div><span className="gym-eyebrow">EXERCISE PROGRESSION</span><h3>Best set load over time</h3></div><select className="gym-inline-select" value={progressExercise} onChange={(event) => setProgressExercise(event.target.value)}>{exercises.map((exercise) => <option key={exercise.name}>{exercise.name}</option>)}</select></div><ProgressionChart points={progression} unit={unit}/></section>
+      <section className="gym-panel"><div className="gym-panel-title"><div><span className="gym-eyebrow">PERSONAL RECORDS</span><h3>Performance bests</h3></div><span className="gym-count">{records.length} exercises</span></div>
+        {records.length ? records.map((record) => <div className="gym-pr-row" key={record.exercise}><div><strong>{record.exercise}</strong><small>Heaviest set · {record.heaviestLoadDate ? displayDate(record.heaviestLoadDate) : "—"}</small></div><div className="gym-pr-values"><b>{record.heaviestLoad === null ? "—" : `${displayLoad(record.heaviestLoad, unit).toFixed(1)} ${unit}`}</b><small>{record.mostReps ?? "—"} reps · est. 1RM {record.estimatedOneRepMax === null ? "—" : `${displayLoad(record.estimatedOneRepMax, unit).toFixed(1)} ${unit}`}</small></div></div>) : <div className="gym-empty"><strong>No records yet</strong><p>Complete a workout to start building your personal records.</p></div>}
+        <p className="gym-chart-note">Estimated 1RM uses Epley: load × (1 + reps ÷ 30), only for sets of 1–10 reps. It is an estimate, not a tested maximum. Rep best is the highest reps logged in one set, regardless of load.</p>
+      </section>
+      <section className="gym-panel"><div className="gym-panel-title"><div><span className="gym-eyebrow">SESSION HISTORY</span><h3>Completed workouts</h3></div><span className="gym-count">{sessions.length} total</span></div>
+        {editingSessionId && sessionDraft && <div className="gym-session-editor">
+          <div className="gym-panel-title"><h3>Edit workout</h3><button className="gym-text-danger" onClick={() => { setEditingSessionId(null); setSessionDraft(null); }}>Cancel</button></div>
+          <label>Session name<input value={sessionDraft.name} onChange={(event) => setSessionDraft({ ...sessionDraft, name: event.target.value })}/></label>
+          <label>Workout date<input type="date" value={sessionDraft.date} onChange={(event) => setSessionDraft({ ...sessionDraft, date: event.target.value })}/></label>
+          {sessionDraft.exercises.map((exercise) => <div className="gym-editor-exercise" key={exercise.name}><strong>{exercise.name}</strong>{exercise.sets.map((set, index) => <div className="gym-editor-set" key={set.id}><span>Set {index + 1}</span><label>Reps<input type="number" min="1" max="100" value={set.reps} onChange={(event) => updateDraftSet(exercise.name, set.id, "reps", event.target.value)}/></label><label>Load ({unit})<input type="number" min="0" step="0.5" value={displayLoad(set.load, unit)} onChange={(event) => updateDraftSet(exercise.name, set.id, "load", event.target.value)}/></label><label>RPE<input type="number" min="1" max="10" value={set.rpe ?? ""} onChange={(event) => updateDraftSet(exercise.name, set.id, "rpe", event.target.value)}/></label><label>RIR<input type="number" min="0" max="5" value={set.rir ?? ""} onChange={(event) => updateDraftSet(exercise.name, set.id, "rir", event.target.value)}/></label><button className="gym-icon-button" onClick={() => removeDraftSet(exercise.name, set.id)} aria-label="Remove set">×</button></div>)}</div>)}
+          <button className="gym-primary" onClick={saveSessionEdit}>Save workout changes</button>
+        </div>}
+        {sessions.length ? sessions.map((session) => <div className="gym-history-item" key={session.id}><div className="gym-history-row"><div><strong>{session.name}</strong><small>{displayDate(session.date)} · {session.durationMinutes} min · {session.exercises.reduce((n, item) => n + item.sets.length, 0)} sets</small></div><b>{Math.round(displayLoad(sessionVolume(session), unit)).toLocaleString()} {unit}</b></div><div className="gym-history-actions"><button className="gym-inline-link" onClick={() => openSessionEditor(session)}>Edit workout</button><button className="gym-text-danger" onClick={() => deleteSession(session.id)}>Delete</button></div></div>) : <div className="gym-empty"><strong>Your history starts with one session</strong><p>Completed workouts will appear here.</p></div>}
+      </section>
+    </div>}
 
     {tab === "Exercises" && <div className="gym-content"><div className="gym-section-intro"><span className="gym-eyebrow">MOVEMENT DATABASE</span><h2>Find your <em>next movement.</em></h2><p>Browse the starter exercise catalogue by muscle group or name.</p></div><input className="gym-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search exercises…"/><div className="gym-filters">{["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core"].map((muscle) => <button key={muscle} className={muscleFilter === muscle ? "active" : ""} onClick={() => setMuscleFilter(muscle)}>{muscle}</button>)}</div><div className="gym-exercise-grid">{filteredExercises.map((item) => <article className="gym-exercise-card" key={item.name}><span>{item.muscle.toUpperCase()}</span><strong>{item.name}</strong><small>{item.equipment}</small><button onClick={() => { setSelectedExercise(item.name); setTab(activeSession ? "Start" : "Plan"); }}>Use exercise ↗</button></article>)}</div></div>}
-    <p className="gym-disclaimer">Training records are stored locally in this browser. Load values are recorded in the selected unit; switch units only for display. Personal records show the heaviest logged single-set load, not a verified one-rep maximum.</p>
+    <p className="gym-disclaimer">Training data stays in this browser. Loads are stored internally in kilograms and converted for display; switching units does not rewrite saved sessions. Volume is the sum of reps × load. Personal records describe logged performance only; estimated 1RM is an Epley estimate for sets of 1–10 reps, not a tested maximum.</p>
   </section>;
 }
