@@ -183,6 +183,16 @@ export default function GymPage() {
   const rotationStart = Date.parse(rotationStartDate + "T00:00:00Z");
   const rotationDays = Number.isFinite(rotationStart) ? Math.max(0, Math.floor((Date.parse(today() + "T00:00:00Z") - rotationStart) / 86400000)) : 0;
   const rotationRoutine = templates.length ? templates[rotationDays % templates.length] : null;
+  const weekStripPlan = days.map((day, index): PlanDay => {
+    if (planMode !== "rotation") return plan.find((item) => item.day === day) ?? defaultPlan[index];
+    if (!templates.length) return { day, focus: "No routine", exercises: [] };
+    const stripDate = new Date(week.start + "T00:00:00");
+    stripDate.setDate(stripDate.getDate() + index);
+    const stripDateUtc = Date.UTC(stripDate.getFullYear(), stripDate.getMonth(), stripDate.getDate());
+    const dayOffset = Number.isFinite(rotationStart) ? Math.max(0, Math.floor((stripDateUtc - rotationStart) / 86400000)) : 0;
+    const routine = templates[dayOffset % templates.length];
+    return { day, focus: routine.name, exercises: routine.exercises };
+  });
   const currentPlan: PlanDay = planMode === "rotation" && rotationRoutine
     ? { day: activeDay, focus: rotationRoutine.name, exercises: rotationRoutine.exercises }
     : plan.find((item) => item.day === activeDay) ?? defaultPlan[0];
@@ -346,7 +356,7 @@ export default function GymPage() {
 
     {tab === "Overview" && <div className="gym-content">
       <div className="gym-welcome"><div className="gym-welcome-copy"><span className="gym-eyebrow">TODAY · {currentPlan.day.toUpperCase()}</span><h2>{currentPlan.focus === "Rest" ? "Recovery day." : <>Ready for <em>{currentPlan.focus || "your workout"}?</em></>}</h2><p>{currentPlan.exercises.length ? `${currentPlan.exercises.length} exercises planned · ${weekSessionCount} workouts completed this week` : "Take a recovery day or build a session when you're ready."}</p><div className="gym-welcome-actions"><button className="gym-primary" onClick={() => currentPlan.exercises.length ? startSession(currentPlan.focus, currentPlan.exercises) : setTab("Plan")}>{currentPlan.exercises.length ? "Start today's workout" : "Build a workout"} <span>→</span></button><button className="gym-quiet-action" onClick={() => setTab("Plan")}>View weekly plan</button></div></div><div className="gym-today-count"><strong>{currentPlan.exercises.length.toString().padStart(2, "0")}</strong><span>EXERCISES</span><i>IN TODAY'S PLAN</i></div></div>
-      <div className="gym-week-strip" aria-label="Weekly training schedule">{plan.map((item) => <button key={item.day} className={activeDay === item.day ? "selected" : ""} onClick={() => { setActiveDay(item.day); setTab("Plan"); }}><span>{item.day.slice(0, 3)}</span><strong>{item.focus === "Rest" ? "Rest" : item.focus.split(/[ +]/)[0]}</strong><small>{item.exercises.length ? `${item.exercises.length} moves` : "Recovery"}</small></button>)}</div>
+      <div className="gym-week-strip" aria-label={planMode === "rotation" ? "Weekly preview of rotating training cycle" : "Weekly training schedule"}>{weekStripPlan.map((item) => <button key={item.day} className={activeDay === item.day ? "selected" : ""} onClick={() => { setActiveDay(item.day); setPlanView("schedule"); setTab("Plan"); }}><span>{item.day.slice(0, 3)}</span><strong>{item.focus === "Rest" ? "Rest" : item.focus === "No routine" ? "—" : item.focus.split(/[ +]/)[0]}</strong><small>{item.exercises.length ? `${item.exercises.length} moves` : item.focus === "No routine" ? "No routine" : "Recovery"}</small></button>)}</div>
       <div className="gym-kpis">
         <article><span>THIS WEEK</span><strong>{weekSessionCount}</strong><small>{week.start} – {week.end}</small></article>
         <article><span>TOTAL SETS</span><strong>{totalSets}</strong><small>logged working sets</small></article>
