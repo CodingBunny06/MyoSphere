@@ -187,7 +187,6 @@ export default function GymPage() {
     ? { day: activeDay, focus: rotationRoutine.name, exercises: rotationRoutine.exercises }
     : plan.find((item) => item.day === activeDay) ?? defaultPlan[0];
   const filteredExercises = exercises.filter((item) => (muscleFilter === "All" || item.muscle === muscleFilter) && item.name.toLowerCase().includes(query.toLowerCase()));
-  const lastSession = sessions[0];
 
   function changeUnit(nextUnit: "kg" | "lb") {
     if (nextUnit === unit) return;
@@ -251,12 +250,6 @@ export default function GymPage() {
   }
   function removePlanExercise(name: string) {
     setPlan((current) => current.map((item) => item.day === activeDay ? { ...item, exercises: item.exercises.filter((value) => value !== name) } : item));
-  }
-  function copyLastWorkoutToPlan() {
-    if (!lastSession) return;
-    setPlan((current) => current.map((item) => item.day === activeDay
-      ? { ...item, focus: lastSession.name, exercises: lastSession.exercises.map((exercise) => exercise.name) }
-      : item));
   }
   function saveTemplate() {
     const name = templateName.trim() || currentPlan.focus || `${activeDay} routine`;
